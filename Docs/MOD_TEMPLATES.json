@@ -1,0 +1,61 @@
+{
+  "TEMPLATE_LAYER": "@name \"template-layer\"\n@version \"1.0.0\"\n@description \"Replace this with your layer description\"\n@modifies kernel\n@dependencies []\n\ncss {\n  /* Your CSS here */\n}\n\nhtml body {\n  <!-- Optional: HTML to inject -->\n}\n\ninit {\n  // Optional: JavaScript initialization\n}",
+  
+  "TEMPLATE_SECTION": "@name \"template-section\"\n@version \"1.0.0\"\n@description \"Replace this with your section description\"\n@dependencies []\n\nhtml {\n  <div class=\"exw3-container\">\n    <h2>Template Section</h2>\n    <p>Replace this HTML with your content</p>\n  </div>\n}\n\ncss {\n  /* Optional: CSS specific to this section */\n}\n\njavascript {\n  // Optional: Global JavaScript for this section\n}\n\ninit {\n  // Optional: Initialization code\n}",
+
+  "INSTRUCTIONS": {
+    "1_Creating_a_Layer": [
+      "1. Copy the TEMPLATE_LAYER text above",
+      "2. Save it to Mods/Layers/my-layer-name.exwl3",
+      "3. Replace @name with your layer name (lowercase, hyphens for spaces)",
+      "4. Update @description",
+      "5. Add CSS in the css block",
+      "6. Add HTML in the html block if needed",
+      "7. Add JavaScript in the init block if needed",
+      "8. Add to Config/site-config.json in the 'layers' array",
+      "9. Refresh index.html to load"
+    ],
+    "2_Creating_a_Section": [
+      "1. Copy the TEMPLATE_SECTION text above",
+      "2. Save it to Mods/Sections/my-section-name.exws3",
+      "3. Replace @name with your section name",
+      "4. Update @description and html content",
+      "5. Add CSS in the css block if needed",
+      "6. Add JavaScript in the javascript block if needed",
+      "7. Add initialization code in the init block if needed",
+      "8. Add to Config/site-config.json in the 'sections' array",
+      "9. Refresh index.html to load"
+    ],
+    "3_Important_Notes": [
+      "- Filename must match the @name field: my-layer → my-layer.exwl3",
+      "- Each name must be unique across all mods",
+      "- Use lowercase names with hyphens: my-layer, my-section",
+      "- All blocks must end with closing brace: }",
+      "- Always update Config/site-config.json after creating new mods",
+      "- Blocks can be omitted if you don't need them"
+    ],
+    "4_File_Format": [
+      "- .exwl3 files are for LAYERS (styling/functionality)",
+      "- .exws3 files are for SECTIONS (complete apps)",
+      "- Both use @name @version @description @dependencies syntax",
+      "- Code blocks use: css { }, html target { }, javascript { }, init { }",
+      "- Text format, not JSON - proper braces matter!"
+    ],
+    "5_Useful_CSS_Classes": [
+      ".exw3-container - Max-width container for content",
+      ".exw3-section - Section wrapper",
+      ".exw3-card - Card/box styling",
+      ".exw3-button - Button styling",
+      ".exw3-input - Input field styling",
+      ".exw3-grid - Responsive grid layout",
+      ".exw3-alert - Alert/notification styling"
+    ],
+    "6_Accessing_the_Kernel": [
+      "In init blocks, the kernel context is available",
+      "kernel.listSections() - Get all sections",
+      "kernel.listLayers() - Get all layers",
+      "kernel.onHook(name, callback) - Listen to events",
+      "For debugging: window.__exw3_kernel in browser console"
+    ]
+  }
+}

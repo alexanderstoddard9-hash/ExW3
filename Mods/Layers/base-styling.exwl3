@@ -1,0 +1,17 @@
+@name "base-styling"
+@version "1.0.0"
+@description "Base styling layer that adds enhanced CSS"
+@modifies kernel
+@dependencies []
+
+css {
+  .exw3-section {
+    margin: 10px 0;
+    border-left: 4px solid #667eea;
+  }
+  
+  .exw3-section h2 {
+    color: #667eea;
+    margin-top: 0;
+  }
+}

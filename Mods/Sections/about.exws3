@@ -1,0 +1,38 @@
+@name "about"
+@version "1.0.0"
+@description "About this EXW3 site"
+@dependencies []
+
+html {
+  <div class="exw3-container">
+    <h2>About EXW3</h2>
+    <div class="exw3-grid">
+      <div class="exw3-card">
+        <h3>What is EXW3?</h3>
+        <p>EXW3 is a modular local site framework. The <strong>Kernel</strong> handles everything under the hood — you just drop in <code>.exwl3</code> layers and <code>.exws3</code> sections to build your site.</p>
+      </div>
+      <div class="exw3-card">
+        <h3>Layers <code>.exwl3</code></h3>
+        <p>Layers modify the look and feel of the site. They can inject CSS, add HTML elements, or run JavaScript when applied.</p>
+      </div>
+      <div class="exw3-card">
+        <h3>Sections <code>.exws3</code></h3>
+        <p>Sections are self-contained apps or pages. Each one has its own HTML, CSS, and JavaScript — all in a single file.</p>
+      </div>
+      <div class="exw3-card">
+        <h3>Getting Started</h3>
+        <p>Edit <code>Config/site-config.json</code> to enable layers and sections. Check <code>Docs/</code> for the full format reference.</p>
+      </div>
+    </div>
+  </div>
+}
+
+css {
+  code {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #667eea;
+  }
+}
