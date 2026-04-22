@@ -1,6 +1,6 @@
 # EXW3
 # EXW3 Local Site - Documentation
-Note the mods included aren't neccecary for the site to work; that is all in the kernel. They are there to show what you can do with it.
+Note, the mods included aren't neccecary for the site to work; that is all in the kernel. They are there to show what you can do with it.
 ## Overview
 
 EXW3 is a modular local site framework with a powerful kernel system and extensible mods. It's designed for site owners to easily add and manage functionality without touching core code.
