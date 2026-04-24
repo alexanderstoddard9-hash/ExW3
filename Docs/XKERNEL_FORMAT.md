@@ -123,18 +123,6 @@ http.createServer((req, res) => {
 }).listen(3000);
 ```
 
-## Building .xkernel Files
-
-Use the build script to create `.xkernel` files:
-
-```bash
-# Build standalone .xkernel
-node build-xkernel.js
-
-# Build complete distribution (includes .xkernel + launcher)
-node build-distribution.js
-```
-
 ## Protection Features
 
 1. **Single File**: All kernel code in one file makes it harder to modify

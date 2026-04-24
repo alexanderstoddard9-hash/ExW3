@@ -1,415 +1,315 @@
-# EXW3 Local Site - Documentation
+# EXW3 Documentation
 
-## Overview
+Welcome to the EXW3 documentation! This guide will help you get started and make the most of your modular web framework.
 
-EXW3 is a modular local site framework with a powerful kernel system and extensible mods. It's designed for site owners to easily add and manage functionality without touching core code.
+## 📚 Documentation Index
 
-## Quick Start
+### Getting Started
+- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Your first steps with EXW3
+- **[AUTO_DISCOVERY.md](AUTO_DISCOVERY.md)** - How automatic mod loading works
 
-### For Users (Distribution)
+### Mod Development
+- **[EX3_FORMAT.md](EX3_FORMAT.md)** - Complete `.ex3` mod format specification
+- **[EX3_SUMMARY.md](EX3_SUMMARY.md)** - Quick reference for `.ex3` format
+- **[ADVANCED_FEATURES.md](ADVANCED_FEATURES.md)** - Advanced mod features
+- **[MOD_TEMPLATES.json](MOD_TEMPLATES.json)** - Ready-to-use mod templates
 
-1. Download the distribution package
-2. Run the launcher:
-   - **Windows**: Double-click `launch.bat`
-   - **Mac/Linux**: Run `./launch.sh` or `python3 launch.py`
-3. Browser opens automatically to your EXW3 site
-4. Customize via mods in the `mods/` folder
+### Technical Reference
+- **[KERNEL_API.md](KERNEL_API.md)** - Complete kernel API reference
+- **[XKERNEL_FORMAT.md](XKERNEL_FORMAT.md)** - Understanding the `.xkernel` format
+- **[EXW3_FORMAT.md](EXW3_FORMAT.md)** - Legacy format documentation
 
-### For Developers
+## 🚀 Quick Start
 
-1. Clone the repository
-2. Run `node build-distribution.js` to create a distribution
-3. Test with `node Kernel/Server/start-server.js`
+### 1. Launch EXW3
 
-## Architecture
+**Windows:**
+```bash
+launch.bat
+```
 
-### .xkernel Format
-The **kernel** is packaged in a single `.xkernel` file that contains:
-- Complete HTML structure
-- Embedded CSS styling
-- All JavaScript code (utils, core, modManager)
-- License and metadata
+**Mac/Linux:**
+```bash
+./launch.sh
+```
 
-**Protection:** The .xkernel file is protected by license and cannot be modified. All customization must be done through mods.
+The browser opens automatically to your EXW3 site!
 
-**Documentation:** See [XKERNEL_FORMAT.md](XKERNEL_FORMAT.md)
+### 2. Create Your First Mod
 
-### .ex3 Mod Format
-**Mods** are stored in `.ex3` files that can be:
-- **Layers**: Add/override CSS and inject HTML elements
-- **Sections**: Self-contained modules with UI, CSS, and JavaScript
-- **Both**: Combined layer and section functionality
+Create a file `mods/hello.ex3`:
 
-**Location:** `mods/` folder (configurable)
+```
+@name "hello"
+@description "My first mod"
+@type both
 
-**Documentation:** See [EX3_FORMAT.md](EX3_FORMAT.md)
+css {
+  .hello {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin: 20px;
+  }
+}
+
+html {
+  <div class="hello">
+    <h2>👋 Hello from my first mod!</h2>
+    <p>This was automatically discovered and loaded.</p>
+  </div>
+}
+
+script {
+  console.log('✅ Hello mod loaded!');
+}
+```
+
+### 3. Reload the Page
+
+Your mod loads automatically - no configuration needed!
+
+## 📖 Core Concepts
+
+### The Kernel
+
+The **kernel** (`exw3.xkernel`) is the core of EXW3. It's a single protected file that contains:
+- HTML structure
+- CSS styling
+- JavaScript framework
+- All core functionality
+
+**Important:** The kernel is protected by license. All customization must be done through mods.
+
+### Mods
+
+**Mods** are `.ex3` files that extend EXW3 functionality. They can be:
+
+- **Layers** - Global styling and HTML injection
+- **Sections** - UI components and pages
+- **Both** - Combined functionality (recommended)
 
 ### Auto-Discovery
-**No configuration needed!** Just drop `.ex3` files in the `mods/` folder and they load automatically.
 
-Set `"mods": ["*"]` in `mod-config.json` to enable auto-discovery. The system will:
-- Automatically scan the mods folder
-- Load all `.ex3` files found
-- Include admin mods from the admin folder
+Drop `.ex3` files in the `mods/` folder and they load automatically. No configuration needed!
 
-**Documentation:** See [AUTO_DISCOVERY.md](AUTO_DISCOVERY.md)
+The system:
+- Scans the `mods/` folder on startup
+- Loads all `.ex3` files found
+- Applies them in the order discovered
 
-## File Structure
+## 🎨 Creating Mods
 
-### Distribution (User-Facing)
+### Basic Mod Structure
+
 ```
-dist/
-├── exw3.xkernel         # Everything in one file (PROTECTED)
-├── launch.py            # Python launcher
-├── launch.bat           # Windows launcher
-├── launch.sh            # Mac/Linux launcher
-├── mod-config.json      # Mod configuration
-├── mods/                # User mods
-│   ├── Admin/           # Admin-only mods
-│   └── *.ex3            # Mod files
-├── KERNEL-LICENSE.txt   # License terms
-└── README.md            # User documentation
-```
+@name "mod-name"
+@description "What this mod does"
+@version "1.0.0"
+@author "Your Name"
+@type both
 
-### Development (Source)
-```
-EXW3/
-├── Kernel/
-│   ├── core.js              # Main kernel class
-│   ├── utils.js             # Utility functions
-│   ├── modManager.js        # Mod loading system
-│   ├── styles.css           # Base styles
-│   ├── exw3-kernel.js       # Combined kernel (built)
-│   └── Server/
-│       ├── server.js        # Development server
-│       ├── start-server.js  # Cross-platform launcher
-│       └── start-server.bat # Windows launcher
-├── Mods/
-│   ├── *.ex3            # Mod files
-│   └── Admin/           # Admin-only mods
-├── Config/
-│   └── site-config.json # Site configuration
-├── Docs/                # Documentation
-├── build-kernel.js      # Build combined kernel
-├── build-xkernel.js     # Build .xkernel file
-├── build-distribution.js # Build distribution package
-└── exw3.xkernel         # Built kernel file
-```
-│   │   ├── dark-mode.exwl3
-│   │   └── header-bar.exwl3
-│   └── Sections/        # Section mods (.exws3 files)
-│       ├── dashboard.exws3
-│       ├── content.exws3
-│       └── settings.exws3
-├── Config/
-│   └── site-config.json # Site configuration
-├── Docs/
-│   ├── README.md        # Full documentation
-│   ├── GETTING_STARTED.md
-│   ├── EXW3_FORMAT.md   # .exw3 file specification
-│   └── SERVER_SETUP.md  # Server setup guide
-└── index.html           # Main entry point
+css {
+  /* Your styles */
+}
+
+html {
+  <!-- Your HTML -->
+}
+
+script {
+  // Your JavaScript
+}
 ```
 
-## Quick Start
+### Mod Types
 
-### Start the Server
+**Layer (`@type layer`):**
+- Global CSS styling
+- HTML injection into existing elements
+- Site-wide modifications
 
-**Using Node.js:**
-```bash
-node Kernel/Server/server.js
-```
+**Section (`@type section`):**
+- Self-contained UI components
+- Pages and widgets
+- Interactive features
 
-**Using npm:**
-```bash
-npm start
-```
+**Both (`@type both`):**
+- Combines layer and section capabilities
+- Most flexible option
+- Recommended for new mods
 
-**Using Python (if Node.js not installed):**
-```bash
-# Python 3
-python -m http.server 3000
+## 🔧 Configuration
 
-# Python 2
-python -m SimpleHTTPServer 3000
-```
-
-Then open your browser to: **http://localhost:3000**
-
-### Using the Site
-
-1. Open the site in your browser
-2. View the console (Press F12) for debugging info
-3. Access kernel: Type `window.__exw3_kernel` in console
-4. Access mod manager: Type `window.__exw3_modManager` in console
-
-## Configuration
-
-Edit `Config/site-config.json` to enable/disable mods:
+Edit `mod-config.json` to customize:
 
 ```json
 {
-  "name": "EXW3 Local Site",
+  "name": "My EXW3 Site",
   "version": "1.0.0",
-  "layers": ["base-styling", "dark-mode"],
-  "sections": ["dashboard", "content", "settings"]
+  "structure": {
+    "modsFolder": "mods",
+    "adminFolder": "mods/admin"
+  },
+  "mods": ["*"]
 }
 ```
 
-- **layers:** Array of layer names to load and apply
-- **sections:** Array of sections to render on the page
+**Auto-Discovery Mode:**
+```json
+"mods": ["*"]
+```
+Loads all mods automatically.
 
-## Creating Mods
+**Manual Mode:**
+```json
+"mods": ["dashboard", "about", "my-mod"]
+```
+Only loads specified mods.
 
-### .exwl3 Format (Layers)
+## 🛠️ Common Tasks
 
-Layer files define CSS styling and HTML modifications. Basic structure:
+### Add a New Feature
+
+1. Create `mods/feature-name.ex3`
+2. Add your HTML, CSS, and JavaScript
+3. Reload the page
+
+### Style the Site
+
+Create a layer mod with CSS:
 
 ```
-@name "my-layer"
-@version "1.0.0"
-@description "Layer description"
-@modifies kernel
-@dependencies []
+@name "my-theme"
+@type layer
 
 css {
-  /* Your CSS here */
-}
-
-html body {
-  <!-- HTML to inject into body -->
-}
-
-init {
-  // Optional: JavaScript initialization
-}
-```
-
-### .exws3 Format (Sections)
-
-Section files combine HTML, CSS, and JavaScript for complete self-contained modules:
-
-```
-@name "my-section"
-@version "1.0.0"
-@description "Section description"
-@dependencies []
-
-html {
-  <!-- Your HTML here -->
-}
-
-css {
-  /* Your CSS here */
-}
-
-javascript {
-  // Global JavaScript for this section
-}
-
-init {
-  // Initialization code (runs after HTML is added)
-}
-
-render {
-  // Optional: Dynamic rendering function
-}
-```
-
-## Adding a New Layer
-
-1. Create a new file in `Mods/Layers/` with `.exwl3` extension
-2. Add your layer definition
-3. Add the layer name to `Config/site-config.json` in the `layers` array
-4. Open `index.html` in browser to load it
-
-**Example:**
-
-Create `Mods/Layers/colorful.exwl3`:
-```
-@name "colorful"
-@version "1.0.0"
-@description "Colorful theme"
-
-css {
-  .exw3-section {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+  body {
+    background: #f0f0f0;
+    font-family: 'Arial', sans-serif;
   }
 }
 ```
 
-Update `Config/site-config.json`:
-```json
-{
-  "layers": ["base-styling", "colorful"]
-}
+### Create a Page
+
+Create a section mod with content:
+
 ```
-
-## Adding a New Section
-
-1. Create a new file in `Mods/Sections/` with `.exws3` extension
-2. Add your section definition
-3. Add the section name to `Config/site-config.json` in the `sections` array
-4. Open `index.html` in browser to load it
-
-**Example:**
-
-Create `Mods/Sections/about.exws3`:
-```
-@name "about"
-@version "1.0.0"
-@description "About page"
+@name "about-page"
+@type section
 
 html {
-  <div class="exw3-container">
-    <h2>About</h2>
-    <p>This is the about page.</p>
+  <div class="page">
+    <h1>About Us</h1>
+    <p>Welcome to our site!</p>
   </div>
 }
-```
 
-Update `Config/site-config.json`:
-```json
-{
-  "sections": ["dashboard", "about"]
+css {
+  .page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
 }
 ```
 
-## Kernel API
-
-### Core Methods
-
-```javascript
-// Access kernel from console
-const kernel = window.__exw3_kernel;
-
-// Register a section
-kernel.registerSection(name, module);
-
-// Register a layer
-kernel.registerLayer(name, module);
-
-// Apply a layer
-kernel.applyLayer(name);
-
-// Initialize kernel
-await kernel.init(config);
-
-// Render the site
-await kernel.render('app');
-
-// List all sections
-kernel.listSections();
-
-// List all layers
-kernel.listLayers();
-
-// Debug info
-kernel.debug();
-```
-
-### Hook System
-
-Hooks are extension points that mods can attach to:
-
-- `before-init` - Before kernel initialization
-- `after-init` - After kernel initialization
-- `before-render` - Before rendering sections
-- `after-render` - After rendering sections
-- `section-register` - When a section is registered
-- `layer-apply` - When a layer is applied
-
-**Example:**
-```javascript
-kernel.onHook('before-render', (data) => {
-  console.log('About to render!');
-}, 10); // priority (higher = runs first)
-```
-
-## Mod Best Practices
-
-1. **Unique Names:** Use descriptive, unique names for mods
-2. **Dependencies:** List dependencies clearly
-3. **Validation:** Check for required elements before modifying DOM
-4. **Error Handling:** Wrap code in try-catch blocks
-5. **Documentation:** Add clear descriptions
-6. **Version:** Use semantic versioning (major.minor.patch)
-
-## Debugging
-
-**Console Commands:**
-```javascript
-// Access kernel and manager
-window.__exw3_kernel
-window.__exw3_modManager
-
-// Get kernel state
-kernel.debug()
-
-// List loaded mods
-modManager.listLoadedMods()
-
-// Get mod info
-modManager.getModInfo('layer:my-layer')
-
-// Reload a mod
-await modManager.reloadMod('section:my-section')
-```
-
-## Common Tasks
-
-### Add CSS to Entire Site
-Create a layer in `Mods/Layers/custom-styles.exw3` with CSS in modifications.
-
-### Add a New App/Page
-Create a section in `Mods/Sections/my-app.exw3` with HTML and logic.
-
-### Modify Existing Section
-Attach hooks to `section-register` event to intercept and modify sections.
-
 ### Add Interactivity
-Use the `init` field in sections to add event listeners and dynamic behavior.
 
-## Performance Tips
+Use the `script` block:
 
-1. Load only needed layers and sections
-2. Keep .exw3 files small and focused
-3. Use CSS for styling instead of DOM manipulation
-4. Cache DOM queries in variables
-5. Avoid heavy computations in render phase
+```
+@name "counter"
+@type both
 
-## Troubleshooting
+html {
+  <div id="counter">
+    <button onclick="increment()">Count: <span id="count">0</span></button>
+  </div>
+}
 
-**Mods not loading:**
-- Check browser console (F12) for errors
-- Verify file paths match configuration
-- Ensure files are in correct directories
-- Check that server is running (not opening from file://)
+script {
+  let count = 0;
+  window.increment = () => {
+    count++;
+    document.getElementById('count').textContent = count;
+  };
+}
+```
 
-**Styling not applying:**
-- Check CSS syntax in modifications
-- Verify selectors are correct
-- Check CSS specificity conflicts
-- Look at browser DevTools Elements tab
+## 🐛 Debugging
 
-**Scripts not running:**
-- Check for JavaScript errors in console
-- Verify init/render functions are valid
-- Check for scope issues (use arrow functions)
-- Ensure DOM elements exist before manipulating
+### Browser Console
 
-**Server setup issues:**
-- See [SERVER_SETUP.md](SERVER_SETUP.md) for detailed setup guide
+Press `F12` to open developer tools.
 
-- Make sure Node.js or Python is installed
-- Check that port 3000 is not in use
+**Check if mods loaded:**
+```javascript
+window.__exw3_modManager.listLoadedMods()
+```
 
-## License
+**Access the kernel:**
+```javascript
+window.__exw3_kernel.debug()
+```
 
-EXW3 is open-source and free to use and modify for your local site.
+### Common Issues
+
+**Mod not loading:**
+- Check browser console for errors
+- Verify `.ex3` file is in `mods/` folder
+- Check file syntax (use a text editor with syntax highlighting)
+
+**Styling not working:**
+- Check CSS syntax
+- Verify selectors match your HTML
+- Use browser DevTools to inspect elements
+
+**JavaScript errors:**
+- Check console for error messages
+- Verify variable names and function calls
+- Make sure DOM elements exist before accessing them
+
+## 📚 Learn More
+
+- **[EX3_FORMAT.md](EX3_FORMAT.md)** - Complete mod format guide
+- **[ADVANCED_FEATURES.md](ADVANCED_FEATURES.md)** - Middleware, plugins, animations
+- **[KERNEL_API.md](KERNEL_API.md)** - Full API documentation
+- **[AUTO_DISCOVERY.md](AUTO_DISCOVERY.md)** - How auto-discovery works
+
+## 🎯 Best Practices
+
+1. **Use descriptive names** - `user-dashboard` not `mod1`
+2. **One feature per mod** - Keep mods focused and reusable
+3. **Test in browser** - Always check console for errors
+4. **Comment your code** - Help future you understand what you did
+5. **Use `@type both`** - Most flexible for future changes
+
+## 🆘 Need Help?
+
+- Check the example mods in the `mods/` folder
+- Read the documentation files listed above
+- Open browser console (F12) to see error messages
+- Review the [KERNEL_API.md](KERNEL_API.md) for available functions
+
+## 📄 License
+
+The EXW3 kernel is protected by license. See `KERNEL-LICENSE.txt` for terms.
+
+You may:
+- ✅ Use EXW3 in your projects
+- ✅ Create unlimited mods
+- ✅ Distribute applications built with EXW3
+
+You may not:
+- ❌ Edit or modify the kernel file
+- ❌ Reverse engineer the kernel
+- ❌ Remove copyright notices
+
+All customization must be done through the mod system.
 
 ---
 
-**Need help?** Check the example mods in `Mods/Layers/` and `Mods/Sections/` for patterns and best practices.
-testtest
+**Ready to build?** Start with [GETTING_STARTED.md](GETTING_STARTED.md)!
