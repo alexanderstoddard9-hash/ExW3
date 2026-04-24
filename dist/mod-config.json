@@ -1,0 +1,10 @@
+{
+  "name": "My EXW3 Site",
+  "version": "1.0.0",
+  "description": "A modular site powered by EXW3",
+  "structure": {
+    "modsFolder": "mods",
+    "adminFolder": "mods/admin"
+  },
+  "mods": ["*"]
+}

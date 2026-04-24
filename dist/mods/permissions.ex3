@@ -1,0 +1,14 @@
+@name "permissions"
+@version "1.0.0"
+@description "Declares section visibility permissions by role"
+@type layer
+@modifies kernel
+@dependencies []
+
+init {
+  // Admin-only sections
+  kernel.registerSectionPermission('admin-panel', ['admin']);
+  kernel.registerSectionPermission('login-settings', ['admin', 'user']);
+
+  // All other sections are visible to everyone (no registration needed)
+}

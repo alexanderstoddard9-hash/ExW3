@@ -1,0 +1,112 @@
+@name "login-settings"
+@version "2.0.0"
+@description "Manage login accounts"
+@type section
+@dependencies []
+
+html {
+  <div class="exw3-container">
+    <h2>Account Settings</h2>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+      <div class="exw3-card" style="flex:1;min-width:280px;">
+        <h3 style="margin-top:0;">Signed in as <span id="ls-current" style="color:#667eea;"></span></h3>
+        <button class="exw3-button secondary" id="ls-logout">Log Out</button>
+      </div>
+      <div class="exw3-card" style="flex:1;min-width:280px;">
+        <h3 style="margin-top:0;">Change Password</h3>
+        <input type="password" class="exw3-input" id="ls-cur-pass" placeholder="Current password">
+        <input type="password" class="exw3-input" id="ls-new-pass" placeholder="New password">
+        <input type="password" class="exw3-input" id="ls-new-pass2" placeholder="Confirm new password">
+        <button class="exw3-button" id="ls-save">Update Password</button>
+        <div id="ls-msg" style="margin-top:10px;"></div>
+      </div>
+      <div class="exw3-card" style="flex:1;min-width:280px;">
+        <h3 style="margin-top:0;">All Accounts</h3>
+        <div id="ls-users"></div>
+      </div>
+    </div>
+  </div>
+}
+
+javascript {
+  const USERS_KEY = 'exw3-users';
+  const SESSION_KEY = 'exw3-auth';
+
+  function getUsers() {
+    return JSON.parse(localStorage.getItem(USERS_KEY) || '{}');
+  }
+
+  function saveUsers(users) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }
+
+  function getCurrentUser() {
+    return sessionStorage.getItem(SESSION_KEY) || 'unknown';
+  }
+
+  function renderUsers() {
+    const el = document.getElementById('ls-users');
+    if (!el) return;
+    const users = getUsers();
+    const current = getCurrentUser();
+    el.innerHTML = Object.keys(users).map(u => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;">
+        <span>${u} ${u === current ? '<strong style="color:#667eea;">(you)</strong>' : ''}</span>
+        ${u !== current ? '<button class="exw3-button secondary" style="padding:4px 10px;font-size:0.8em;" data-del="'+u+'">Delete</button>' : ''}
+      </div>
+    `).join('');
+    el.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const users = getUsers();
+        delete users[btn.dataset.del];
+        saveUsers(users);
+        renderUsers();
+      });
+    });
+  }
+}
+
+init {
+  const cur = document.getElementById('ls-current');
+  if (cur) cur.textContent = getCurrentUser();
+  renderUsers();
+
+  const logoutBtn = document.getElementById('ls-logout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      if (window.exw3Logout) window.exw3Logout();
+    });
+  }
+
+  const saveBtn = document.getElementById('ls-save');
+  const msg = document.getElementById('ls-msg');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      const curPass = document.getElementById('ls-cur-pass').value;
+      const newPass = document.getElementById('ls-new-pass').value;
+      const newPass2 = document.getElementById('ls-new-pass2').value;
+      const users = getUsers();
+      const user = getCurrentUser();
+      msg.innerHTML = '';
+      if (users[user].password !== curPass) {
+        msg.innerHTML = '<div class="exw3-alert error">Current password is incorrect.</div>';
+        return;
+      }
+      if (newPass.length < 4) {
+        msg.innerHTML = '<div class="exw3-alert error">New password must be at least 4 characters.</div>';
+        return;
+      }
+      if (newPass !== newPass2) {
+        msg.innerHTML = '<div class="exw3-alert error">Passwords do not match.</div>';
+        return;
+      }
+      users[user].password = newPass;
+      saveUsers(users);
+      msg.innerHTML = '<div class="exw3-alert success">Password updated!</div>';
+      document.getElementById('ls-cur-pass').value = '';
+      document.getElementById('ls-new-pass').value = '';
+      document.getElementById('ls-new-pass2').value = '';
+      setTimeout(() => { msg.innerHTML = ''; }, 3000);
+    });
+  }
+}

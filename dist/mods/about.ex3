@@ -1,0 +1,39 @@
+@name "about"
+@version "1.0.0"
+@description "About this EXW3 site"
+@type section
+@dependencies []
+
+html {
+  <div class="exw3-container">
+    <h2>About EXW3</h2>
+    <div class="exw3-grid">
+      <div class="exw3-card">
+        <h3>What is EXW3?</h3>
+        <p>EXW3 is a modular local site framework. The <strong>Kernel</strong> handles everything under the hood — you just drop in <code>.ex3</code> mods to build your site.</p>
+      </div>
+      <div class="exw3-card">
+        <h3>Unified Format <code>.ex3</code></h3>
+        <p>The .ex3 format combines layer and section capabilities. Create mods that can modify globally, render UI components, or both!</p>
+      </div>
+      <div class="exw3-card">
+        <h3>Advanced Features</h3>
+        <p>Middleware, plugins, validators, transformers, animations, i18n, caching, scheduling, and more!</p>
+      </div>
+      <div class="exw3-card">
+        <h3>Getting Started</h3>
+        <p>Check <code>Docs/EX3_FORMAT.md</code> for the full format reference and <code>Docs/ADVANCED_FEATURES.md</code> for advanced capabilities.</p>
+      </div>
+    </div>
+  </div>
+}
+
+css {
+  code {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #667eea;
+  }
+}

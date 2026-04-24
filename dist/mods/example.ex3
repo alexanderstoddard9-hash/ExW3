@@ -1,0 +1,22 @@
+@name "example"
+@version "1.0.0"
+@description "Example mod - customize this!"
+@type both
+
+css {
+  .example-class {
+    color: #667eea;
+    font-weight: bold;
+  }
+}
+
+html {
+  <div class="example-class">
+    <h2>Welcome to EXW3!</h2>
+    <p>Edit this mod or create your own in the mods folder.</p>
+  </div>
+}
+
+init {
+  console.log('Example mod loaded!');
+}

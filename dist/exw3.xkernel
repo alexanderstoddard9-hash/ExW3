@@ -1,0 +1,2736 @@
+@xkernel "EXW3"
+@version "2.0"
+@built "2026-04-23T22:38:29.699Z"
+@license "See KERNEL-LICENSE.txt"
+
+@notice {
+  IMPORTANT: This file is protected by copyright and license agreement.
+  You may NOT edit, modify, reverse engineer, or attempt to modify this file.
+  All customization must be done through the mod system (.ex3 files).
+  Violation of these terms will result in immediate license termination.
+}
+
+@metadata {
+  "name": "EXW3 Kernel",
+  "description": "Modular web framework with unified mod system",
+  "author": "EXW3 Project",
+  "website": "https://github.com/yourusername/exw3"
+}
+
+html {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXW3 Site</title>
+    <style id="xkernel-styles">
+        /* XKernel Embedded Styles */
+        /**
+ * EXW3 Kernel Base Styles
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #333;
+  background-color: #f5f5f5;
+}
+
+#app {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  min-height: 100vh;
+}
+
+.exw3-section {
+  padding: 20px;
+  background: white;
+  border-bottom: 1px solid #ddd;
+}
+
+.exw3-section:last-child {
+  border-bottom: none;
+}
+
+.exw3-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.exw3-header h1 {
+  margin: 0;
+  font-size: 2.5em;
+}
+
+.exw3-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.exw3-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.exw3-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: box-shadow 0.3s;
+}
+
+.exw3-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.exw3-button {
+  display: inline-block;
+  background: #667eea;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.exw3-button:hover {
+  background: #5568d3;
+}
+
+.exw3-button.secondary {
+  background: #ccc;
+  color: #333;
+}
+
+.exw3-button.secondary:hover {
+  background: #bbb;
+}
+
+.exw3-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.exw3-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.exw3-alert {
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.exw3-alert.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.exw3-alert.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.exw3-alert.info {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .exw3-header h1 {
+    font-size: 1.8em;
+  }
+
+  #app {
+    grid-template-columns: 1fr;
+  }
+
+  .exw3-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Notification Animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+.exw3-notification {
+  animation: slideIn 0.3s ease-out;
+  transition: all 0.3s ease;
+}
+
+.exw3-notification:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2) !important;
+}
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script id="xkernel-script">
+        /* XKernel Embedded Script */
+        (function(window) {
+          'use strict';
+
+          /**
+ * EXW3 Kernel Utilities
+ * Helper functions for mods and kernel
+ */
+
+const EXW3Utils = {
+  /**
+   * Parse .ex3 unified mod files (combines layer and section features)
+   */
+  parseEx3(content) {
+    content = content.replace(/\r/g, '');
+    const result = {
+      name: '',
+      type: 'unified', // Can act as both layer and section
+      version: '1.0.0',
+      description: '',
+      author: '',
+      priority: 10,
+      disabled: false,
+      modifies: [],
+      dependencies: [],
+      
+      // Layer features
+      modifications: [],
+      inits: [],
+      lifecycle: {},
+      watchers: [],
+      middleware: [],
+      validators: {},
+      transformers: {},
+      i18n: {},
+      
+      // Section features
+      html: '',
+      css: '',
+      javascript: '',
+      init: null,
+      render: null,
+      computed: {},
+      methods: {},
+      props: {},
+      state: {},
+      sectionWatchers: {}
+    };
+
+    // Extract metadata
+    const nameMatch    = content.match(/@name\s+"([^"]+)"/);
+    const versionMatch = content.match(/@version\s+"([^"]+)"/);
+    const descMatch    = content.match(/@description\s+"([^"]+)"/);
+    const authorMatch  = content.match(/@author\s+"([^"]+)"/);
+    const priorityMatch= content.match(/@priority\s+(\d+)/);
+    const disabledMatch= content.match(/@disabled/);
+    const modifiesMatch= content.match(/@modifies\s+([^\n]+)/);
+    const depsMatch    = content.match(/@dependencies\s*\[([^\]]*)\]/);
+    const typeMatch    = content.match(/@type\s+(layer|section|both)/);
+
+    if (nameMatch)     result.name        = nameMatch[1];
+    if (versionMatch)  result.version     = versionMatch[1];
+    if (descMatch)     result.description = descMatch[1];
+    if (authorMatch)   result.author      = authorMatch[1];
+    if (priorityMatch) result.priority    = parseInt(priorityMatch[1], 10);
+    if (disabledMatch) result.disabled    = true;
+    if (modifiesMatch) result.modifies    = modifiesMatch[1].trim().split(/\s*,\s*/);
+    if (typeMatch)     result.type        = typeMatch[1];
+    if (depsMatch && depsMatch[1]) {
+      result.dependencies = depsMatch[1].split(',').map(s => s.trim().replace(/['"]/g, '')).filter(Boolean);
+    }
+
+    // Parse CSS blocks (multiple allowed)
+    const cssRegex = /^css\s*\{([\s\S]*?)\n^\}/gm;
+    let cssMatch;
+    let cssContent = '';
+    while ((cssMatch = cssRegex.exec(content)) !== null) {
+      cssContent += cssMatch[1].trim() + '\n';
+      result.modifications.push({
+        type: 'css',
+        content: cssMatch[1].trim()
+      });
+    }
+    result.css = cssContent.trim();
+
+    // Parse HTML blocks
+    const htmlRegex = /^html\s+(prepend|append)?\s*([^\s{]+)?\s*\{([\s\S]*?)\n^\}/gm;
+    let htmlMatch;
+    while ((htmlMatch = htmlRegex.exec(content)) !== null) {
+      const position = htmlMatch[1] || 'prepend';
+      const target = htmlMatch[2];
+      const htmlContent = htmlMatch[3].trim();
+      
+      if (target) {
+        // Layer-style HTML injection
+        result.modifications.push({
+          type: 'html',
+          position,
+          target,
+          content: htmlContent
+        });
+      } else {
+        // Section-style HTML content
+        result.html = htmlContent;
+      }
+    }
+
+    // Parse remove blocks
+    const removeRegex = /^remove\s+([^\s{;\n]+)\s*(?:\{[^}]*\}|;)/gm;
+    let removeMatch;
+    while ((removeMatch = removeRegex.exec(content)) !== null) {
+      result.modifications.push({
+        type: 'remove',
+        target: removeMatch[1].trim()
+      });
+    }
+
+    // Parse JavaScript block
+    const jsRegex = /^javascript\s*\{([\s\S]*?)\n^\}/m;
+    const jsMatch = jsRegex.exec(content);
+    if (jsMatch) {
+      result.javascript = jsMatch[1].trim();
+    }
+
+    // Parse init blocks (multiple allowed for layer-style)
+    const initRegex = /^init\s*\{([\s\S]*?)\n^\}/gm;
+    let initMatch;
+    while ((initMatch = initRegex.exec(content)) !== null) {
+      result.inits.push(initMatch[1].trim());
+    }
+    result.init = result.inits[0] || null;
+
+    // Parse render block
+    const renderRegex = /^render\s*\{([\s\S]*?)\n^\}/m;
+    const renderMatch = renderRegex.exec(content);
+    if (renderMatch) {
+      result.render = renderMatch[1].trim();
+    }
+
+    // Parse lifecycle blocks
+    const lifecycleRegex = /^(onLoad|onUnload|onActivate|onDeactivate|onMount|onUnmount|onUpdate|onDestroy)\s*\{([\s\S]*?)\n^\}/gm;
+    let lifecycleMatch;
+    while ((lifecycleMatch = lifecycleRegex.exec(content)) !== null) {
+      result.lifecycle[lifecycleMatch[1]] = lifecycleMatch[2].trim();
+    }
+
+    // Parse watch blocks for DOM watching (layer-style)
+    const domWatchRegex = /^watch\s+([^\s{]+)\s*\{([\s\S]*?)\n^\}/gm;
+    let domWatchMatch;
+    while ((domWatchMatch = domWatchRegex.exec(content)) !== null) {
+      const selector = domWatchMatch[1].trim();
+      if (selector.startsWith('#') || selector.startsWith('.')) {
+        // DOM selector watch
+        result.watchers.push({
+          selector,
+          handler: domWatchMatch[2].trim()
+        });
+      } else {
+        // State watch (section-style)
+        result.sectionWatchers[selector] = domWatchMatch[2].trim();
+      }
+    }
+
+    // Parse middleware blocks
+    const middlewareRegex = /^middleware\s+"([^"]+)"\s*\{([\s\S]*?)\n^\}/gm;
+    let middlewareMatch;
+    while ((middlewareMatch = middlewareRegex.exec(content)) !== null) {
+      result.middleware.push({
+        name: middlewareMatch[1],
+        handler: middlewareMatch[2].trim()
+      });
+    }
+
+    // Parse validator blocks
+    const validatorRegex = /^validator\s+"([^"]+)"\s*\{([\s\S]*?)\n^\}/gm;
+    let validatorMatch;
+    while ((validatorMatch = validatorRegex.exec(content)) !== null) {
+      result.validators[validatorMatch[1]] = validatorMatch[2].trim();
+    }
+
+    // Parse transformer blocks
+    const transformerRegex = /^transformer\s+"([^"]+)"\s*\{([\s\S]*?)\n^\}/gm;
+    let transformerMatch;
+    while ((transformerMatch = transformerRegex.exec(content)) !== null) {
+      result.transformers[transformerMatch[1]] = transformerMatch[2].trim();
+    }
+
+    // Parse i18n blocks
+    const i18nRegex = /^i18n\s+"([^"]+)"\s*\{([\s\S]*?)\n^\}/gm;
+    let i18nMatch;
+    while ((i18nMatch = i18nRegex.exec(content)) !== null) {
+      try {
+        result.i18n[i18nMatch[1]] = JSON.parse('{' + i18nMatch[2].trim() + '}');
+      } catch (e) {
+        console.error(`Failed to parse i18n for locale '${i18nMatch[1]}':`, e);
+      }
+    }
+
+    // Parse computed blocks
+    const computedRegex = /^computed\s+"([^"]+)"\s*\{([\s\S]*?)\n^\}/gm;
+    let computedMatch;
+    while ((computedMatch = computedRegex.exec(content)) !== null) {
+      result.computed[computedMatch[1]] = computedMatch[2].trim();
+    }
+
+    // Parse method blocks
+    const methodRegex = /^method\s+"([^"]+)"\s*\{([\s\S]*?)\n^\}/gm;
+    let methodMatch;
+    while ((methodMatch = methodRegex.exec(content)) !== null) {
+      result.methods[methodMatch[1]] = methodMatch[2].trim();
+    }
+
+    // Parse props block
+    const propsRegex = /^props\s*\{([\s\S]*?)\n^\}/m;
+    const propsMatch = propsRegex.exec(content);
+    if (propsMatch) {
+      try {
+        result.props = JSON.parse('{' + propsMatch[1].trim() + '}');
+      } catch (e) {
+        console.error('Failed to parse props:', e);
+      }
+    }
+
+    // Parse state block
+    const stateRegex = /^state\s*\{([\s\S]*?)\n^\}/m;
+    const stateMatch = stateRegex.exec(content);
+    if (stateMatch) {
+      try {
+        result.state = JSON.parse('{' + stateMatch[1].trim() + '}');
+      } catch (e) {
+        console.error('Failed to parse state:', e);
+      }
+    }
+
+    return result;
+  },
+
+  /**
+   * Parse .exwl3 layer files
+   */
+  parseExwl3(content) {
+    // Use unified parser and mark as layer
+    const result = this.parseEx3(content);
+    result.type = 'layer';
+    return result;
+  },
+
+  /**
+   * Parse .exws3 section files
+   */
+  parseExws3(content) {
+    // Use unified parser and mark as section
+    const result = this.parseEx3(content);
+    result.type = 'section';
+    return result;
+  },
+
+  /**
+   * Create a unified mod from .ex3 definition (can be both layer and section)
+   */
+  createUnifiedModFromEx3(ex3Data, name) {
+    const sectionState = ex3Data.state || {};
+    const sectionMethods = {};
+    const sectionComputed = {};
+
+    // Create methods
+    if (ex3Data.methods) {
+      for (const [methodName, code] of Object.entries(ex3Data.methods)) {
+        try {
+          sectionMethods[methodName] = new Function('kernel', code);
+        } catch (error) {
+          console.error(`Error creating method '${methodName}':`, error);
+        }
+      }
+    }
+
+    // Create computed properties
+    if (ex3Data.computed) {
+      for (const [propName, code] of Object.entries(ex3Data.computed)) {
+        try {
+          sectionComputed[propName] = new Function('kernel', code);
+        } catch (error) {
+          console.error(`Error creating computed '${propName}':`, error);
+        }
+      }
+    }
+
+    return {
+      name: ex3Data.name || name,
+      description: ex3Data.description || '',
+      author: ex3Data.author || '',
+      version: ex3Data.version || '1.0.0',
+      priority: ex3Data.priority ?? 10,
+      disabled: ex3Data.disabled || false,
+      modifies: ex3Data.modifies || [],
+      dependencies: ex3Data.dependencies || [],
+      type: ex3Data.type || 'both',
+      state: sectionState,
+      methods: sectionMethods,
+      computed: sectionComputed,
+
+      // Layer functionality
+      onApply(kernel) {
+        if (this.disabled) {
+          console.log(`⊘ Mod '${this.name}' is disabled, skipping`);
+          return;
+        }
+
+        // Execute lifecycle: onLoad
+        if (ex3Data.lifecycle.onLoad) {
+          try {
+            const fn = new Function('kernel', ex3Data.lifecycle.onLoad);
+            fn(kernel);
+          } catch (error) {
+            console.error(`Error in mod '${this.name}' onLoad:`, error);
+          }
+        }
+
+        // Execute modifications (layer features)
+        if (ex3Data.modifications) {
+          ex3Data.modifications.forEach(mod => {
+            if (mod.type === 'css') {
+              EXW3Utils.injectCSS(mod.content);
+            } else if (mod.type === 'html') {
+              EXW3Utils.injectHTML(mod.target, mod.content, mod.position);
+            } else if (mod.type === 'remove') {
+              EXW3Utils.removeElement(mod.target);
+            }
+          });
+        }
+
+        // Register validators
+        if (ex3Data.validators) {
+          for (const [name, code] of Object.entries(ex3Data.validators)) {
+            try {
+              const fn = new Function('value', 'params', 'data', code);
+              kernel.registerValidator(name, fn);
+            } catch (error) {
+              console.error(`Error registering validator '${name}':`, error);
+            }
+          }
+        }
+
+        // Register transformers
+        if (ex3Data.transformers) {
+          for (const [name, code] of Object.entries(ex3Data.transformers)) {
+            try {
+              const fn = new Function('data', '...args', code);
+              kernel.registerTransformer(name, fn);
+            } catch (error) {
+              console.error(`Error registering transformer '${name}':`, error);
+            }
+          }
+        }
+
+        // Register middleware
+        if (ex3Data.middleware) {
+          ex3Data.middleware.forEach(mw => {
+            try {
+              const fn = new Function('context', 'data', 'kernel', mw.handler);
+              kernel.registerMiddleware(mw.name, fn);
+            } catch (error) {
+              console.error(`Error registering middleware '${mw.name}':`, error);
+            }
+          });
+        }
+
+        // Add i18n translations
+        if (ex3Data.i18n) {
+          for (const [locale, messages] of Object.entries(ex3Data.i18n)) {
+            kernel.i18n.addTranslations(locale, messages);
+          }
+        }
+
+        // Setup DOM watchers
+        if (ex3Data.watchers) {
+          ex3Data.watchers.forEach(watcher => {
+            try {
+              const fn = new Function('mutations', 'element', 'kernel', watcher.handler);
+              kernel.watchElement(watcher.selector, (mutations, element) => {
+                fn(mutations, element, kernel);
+              });
+            } catch (error) {
+              console.error(`Error setting up watcher for '${watcher.selector}':`, error);
+            }
+          });
+        }
+
+        // Execute all init blocks in order
+        const inits = ex3Data.inits && ex3Data.inits.length
+          ? ex3Data.inits
+          : (ex3Data.init ? [ex3Data.init] : []);
+
+        for (const initCode of inits) {
+          try {
+            const fn = new Function('kernel', initCode);
+            fn(kernel);
+          } catch (error) {
+            console.error(`Error in mod '${this.name}' init:`, error);
+            const errEl = document.createElement('div');
+            errEl.style.cssText = 'background:#fee;border:1px solid #f99;padding:10px;margin:10px;border-radius:4px;font-family:monospace;font-size:13px;color:#900;position:fixed;bottom:10px;right:10px;z-index:9999;max-width:400px;';
+            errEl.textContent = '[mod:' + this.name + '] ' + error.message;
+            document.body.appendChild(errEl);
+          }
+        }
+
+        // Execute lifecycle: onActivate
+        if (ex3Data.lifecycle.onActivate) {
+          try {
+            const fn = new Function('kernel', ex3Data.lifecycle.onActivate);
+            fn(kernel);
+          } catch (error) {
+            console.error(`Error in mod '${this.name}' onActivate:`, error);
+          }
+        }
+      },
+
+      // Section functionality
+      async init(kernel) {
+        // Execute lifecycle: onMount
+        if (ex3Data.lifecycle.onMount) {
+          try {
+            const fn = new Function('kernel', ex3Data.lifecycle.onMount);
+            fn(kernel);
+          } catch (error) {
+            console.error('Error in mod ' + this.name + ' onMount:', error);
+          }
+        }
+      },
+
+      async render(container, kernel) {
+        // Set HTML first so DOM elements exist before scripts run
+        if (ex3Data.render) {
+          try {
+            const fn = new Function('container', 'kernel', ex3Data.render);
+            fn(container, kernel);
+          } catch (error) {
+            console.error('Error rendering mod ' + this.name + ':', error);
+          }
+        } else if (ex3Data.html) {
+          container.innerHTML = ex3Data.html;
+        }
+
+        // Inject CSS into head
+        if (ex3Data.css) {
+          const existingStyle = document.getElementById(`style-section-${this.name}`);
+          if (!existingStyle) {
+            EXW3Utils.injectCSS(ex3Data.css, `style-section-${this.name}`);
+          }
+        }
+
+        // Setup state watchers
+        if (ex3Data.sectionWatchers) {
+          for (const [key, code] of Object.entries(ex3Data.sectionWatchers)) {
+            try {
+              const fn = new Function('newValue', 'oldValue', 'kernel', code);
+              kernel.watchState(key, (data) => {
+                fn(data.value, data.oldValue, kernel);
+              });
+            } catch (error) {
+              console.error(`Error setting up watcher for '${key}':`, error);
+            }
+          }
+        }
+
+        // Expose methods and computed to section context
+        const sectionContext = {
+          state: this.state,
+          methods: this.methods,
+          computed: this.computed,
+          $el: container
+        };
+
+        // Make methods callable with kernel context
+        for (const [methodName, method] of Object.entries(this.methods)) {
+          sectionContext[methodName] = () => method.call(sectionContext, kernel);
+        }
+
+        // Run javascript + init together in one scope
+        const jsCode = (ex3Data.javascript || '') + '\n' + (ex3Data.init || '');
+        if (jsCode.trim()) {
+          try {
+            const fn = new Function('kernel', 'context', jsCode);
+            fn(kernel, sectionContext);
+          } catch (error) {
+            console.error('Error in mod ' + this.name + ' script:', error);
+            const errEl = document.createElement('div');
+            errEl.style.cssText = 'background:#fee;border:1px solid #f99;padding:10px;margin:10px;border-radius:4px;font-family:monospace;font-size:13px;color:#900;';
+            errEl.textContent = '[' + this.name + '] ' + error.message;
+            container.appendChild(errEl);
+          }
+        }
+
+        // Execute lifecycle: onUpdate
+        if (ex3Data.lifecycle.onUpdate) {
+          try {
+            const fn = new Function('kernel', 'context', ex3Data.lifecycle.onUpdate);
+            fn(kernel, sectionContext);
+          } catch (error) {
+            console.error('Error in mod ' + this.name + ' onUpdate:', error);
+          }
+        }
+      }
+    };
+  },
+
+  /**
+   * Create a layer from .exwl3 definition
+   */
+  createLayerFromExwl3(exwl3Data, name) {
+    return {
+      name: exwl3Data.name || name,
+      description: exwl3Data.description || '',
+      author: exwl3Data.author || '',
+      version: exwl3Data.version || '1.0.0',
+      priority: exwl3Data.priority ?? 10,
+      disabled: exwl3Data.disabled || false,
+      modifies: exwl3Data.modifies || [],
+      dependencies: exwl3Data.dependencies || [],
+
+      onApply(kernel) {
+        if (this.disabled) {
+          console.log(`⊘ Layer '${this.name}' is disabled, skipping`);
+          return;
+        }
+
+        // Execute lifecycle: onLoad
+        if (exwl3Data.lifecycle.onLoad) {
+          try {
+            const fn = new Function('kernel', exwl3Data.lifecycle.onLoad);
+            fn(kernel);
+          } catch (error) {
+            console.error(`Error in layer '${this.name}' onLoad:`, error);
+          }
+        }
+
+        // Execute modifications
+        if (exwl3Data.modifications) {
+          exwl3Data.modifications.forEach(mod => {
+            if (mod.type === 'css') {
+              EXW3Utils.injectCSS(mod.content);
+            } else if (mod.type === 'html') {
+              EXW3Utils.injectHTML(mod.target, mod.content, mod.position);
+            } else if (mod.type === 'remove') {
+              EXW3Utils.removeElement(mod.target);
+            }
+          });
+        }
+
+        // Register validators
+        if (exwl3Data.validators) {
+          for (const [name, code] of Object.entries(exwl3Data.validators)) {
+            try {
+              const fn = new Function('value', 'params', 'data', code);
+              kernel.registerValidator(name, fn);
+            } catch (error) {
+              console.error(`Error registering validator '${name}':`, error);
+            }
+          }
+        }
+
+        // Register transformers
+        if (exwl3Data.transformers) {
+          for (const [name, code] of Object.entries(exwl3Data.transformers)) {
+            try {
+              const fn = new Function('data', '...args', code);
+              kernel.registerTransformer(name, fn);
+            } catch (error) {
+              console.error(`Error registering transformer '${name}':`, error);
+            }
+          }
+        }
+
+        // Register middleware
+        if (exwl3Data.middleware) {
+          exwl3Data.middleware.forEach(mw => {
+            try {
+              const fn = new Function('context', 'data', 'kernel', mw.handler);
+              kernel.registerMiddleware(mw.name, fn);
+            } catch (error) {
+              console.error(`Error registering middleware '${mw.name}':`, error);
+            }
+          });
+        }
+
+        // Add i18n translations
+        if (exwl3Data.i18n) {
+          for (const [locale, messages] of Object.entries(exwl3Data.i18n)) {
+            kernel.i18n.addTranslations(locale, messages);
+          }
+        }
+
+        // Setup DOM watchers
+        if (exwl3Data.watchers) {
+          exwl3Data.watchers.forEach(watcher => {
+            try {
+              const fn = new Function('mutations', 'element', 'kernel', watcher.handler);
+              kernel.watchElement(watcher.selector, (mutations, element) => {
+                fn(mutations, element, kernel);
+              });
+            } catch (error) {
+              console.error(`Error setting up watcher for '${watcher.selector}':`, error);
+            }
+          });
+        }
+
+        // Execute all init blocks in order
+        const inits = exwl3Data.inits && exwl3Data.inits.length
+          ? exwl3Data.inits
+          : (exwl3Data.init ? [exwl3Data.init] : []);
+
+        for (const initCode of inits) {
+          try {
+            // Use Function constructor instead of eval to avoid parsing issues with comments
+            const fn = new Function('kernel', initCode);
+            fn(kernel);
+          } catch (error) {
+            console.error(`Error in layer '${this.name}' init:`, error);
+            const errEl = document.createElement('div');
+            errEl.style.cssText = 'background:#fee;border:1px solid #f99;padding:10px;margin:10px;border-radius:4px;font-family:monospace;font-size:13px;color:#900;position:fixed;bottom:10px;right:10px;z-index:9999;max-width:400px;';
+            errEl.textContent = '[layer:' + this.name + '] ' + error.message;
+            document.body.appendChild(errEl);
+          }
+        }
+
+        // Execute lifecycle: onActivate
+        if (exwl3Data.lifecycle.onActivate) {
+          try {
+            const fn = new Function('kernel', exwl3Data.lifecycle.onActivate);
+            fn(kernel);
+          } catch (error) {
+            console.error(`Error in layer '${this.name}' onActivate:`, error);
+          }
+        }
+      }
+    };
+  },
+
+  /**
+   * Create a section from .exws3 definition
+   */
+  createSectionFromExws3(exws3Data, name) {
+    const sectionState = exws3Data.state || {};
+    const sectionMethods = {};
+    const sectionComputed = {};
+
+    // Create methods
+    if (exws3Data.methods) {
+      for (const [methodName, code] of Object.entries(exws3Data.methods)) {
+        try {
+          sectionMethods[methodName] = new Function('kernel', code);
+        } catch (error) {
+          console.error(`Error creating method '${methodName}':`, error);
+        }
+      }
+    }
+
+    // Create computed properties
+    if (exws3Data.computed) {
+      for (const [propName, code] of Object.entries(exws3Data.computed)) {
+        try {
+          sectionComputed[propName] = new Function('kernel', code);
+        } catch (error) {
+          console.error(`Error creating computed '${propName}':`, error);
+        }
+      }
+    }
+
+    return {
+      name: exws3Data.name || name,
+      description: exws3Data.description || '',
+      version: exws3Data.version || '1.0.0',
+      dependencies: exws3Data.dependencies || [],
+      state: sectionState,
+      methods: sectionMethods,
+      computed: sectionComputed,
+
+      async init(kernel) {
+        // CSS is injected during render to avoid id conflicts with section container
+        
+        // Execute lifecycle: onMount
+        if (exws3Data.lifecycle.onMount) {
+          try {
+            const fn = new Function('kernel', exws3Data.lifecycle.onMount);
+            fn(kernel);
+          } catch (error) {
+            console.error('Error in section ' + this.name + ' onMount:', error);
+          }
+        }
+      },
+
+      async render(container, kernel) {
+        // Set HTML first so DOM elements exist before scripts run
+        if (exws3Data.render) {
+          try {
+            // Use Function constructor instead of eval to avoid parsing issues with comments
+            const fn = new Function('container', 'kernel', exws3Data.render);
+            fn(container, kernel);
+          } catch (error) {
+            console.error('Error rendering section ' + this.name + ':', error);
+          }
+        } else if (exws3Data.html) {
+          container.innerHTML = exws3Data.html;
+        }
+
+        // Inject CSS into head (done here so it's scoped to render lifecycle)
+        if (exws3Data.css) {
+          const existingStyle = document.getElementById(`style-section-${this.name}`);
+          if (!existingStyle) {
+            EXW3Utils.injectCSS(exws3Data.css, `style-section-${this.name}`);
+          }
+        }
+
+        // Setup watchers
+        if (exws3Data.watchers) {
+          for (const [key, code] of Object.entries(exws3Data.watchers)) {
+            try {
+              const fn = new Function('newValue', 'oldValue', 'kernel', code);
+              kernel.watchState(key, (data) => {
+                fn(data.value, data.oldValue, kernel);
+              });
+            } catch (error) {
+              console.error(`Error setting up watcher for '${key}':`, error);
+            }
+          }
+        }
+
+        // Expose methods and computed to section context
+        const sectionContext = {
+          state: this.state,
+          methods: this.methods,
+          computed: this.computed,
+          $el: container
+        };
+
+        // Make methods callable with kernel context
+        for (const [methodName, method] of Object.entries(this.methods)) {
+          sectionContext[methodName] = () => method.call(sectionContext, kernel);
+        }
+
+        // Run javascript + init together in one scope so they share variables
+        const jsCode = (exws3Data.javascript || '') + '\n' + (exws3Data.init || '');
+        if (jsCode.trim()) {
+          try {
+            // Use Function constructor instead of eval to avoid parsing issues with comments
+            const fn = new Function('kernel', 'context', jsCode);
+            fn(kernel, sectionContext);
+          } catch (error) {
+            console.error('Error in section ' + this.name + ' script:', error);
+            const errEl = document.createElement('div');
+            errEl.style.cssText = 'background:#fee;border:1px solid #f99;padding:10px;margin:10px;border-radius:4px;font-family:monospace;font-size:13px;color:#900;';
+            errEl.textContent = '[' + this.name + '] ' + error.message;
+            container.appendChild(errEl);
+          }
+        }
+
+        // Execute lifecycle: onUpdate
+        if (exws3Data.lifecycle.onUpdate) {
+          try {
+            const fn = new Function('kernel', 'context', exws3Data.lifecycle.onUpdate);
+            fn(kernel, sectionContext);
+          } catch (error) {
+            console.error('Error in section ' + this.name + ' onUpdate:', error);
+          }
+        }
+      }
+    };
+  },
+
+  /**
+   * Load an .exwl3 or .exws3 or .ex3 file from URL or path
+   */
+  async loadModFile(url) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const content = await response.text();
+      
+      if (url.endsWith('.ex3')) {
+        return this.parseEx3(content);
+      } else if (url.endsWith('.exwl3')) {
+        return this.parseExwl3(content);
+      } else if (url.endsWith('.exws3')) {
+        return this.parseExws3(content);
+      } else {
+        throw new Error('Unsupported file format. Use .ex3, .exwl3, or .exws3');
+      }
+    } catch (error) {
+      console.error(`Failed to load mod file from ${url}:`, error);
+      return null;
+    }
+  },
+
+  /**
+   * Load an .ex3 file specifically
+   */
+  async loadEx3File(url) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const content = await response.text();
+      return this.parseEx3(content);
+    } catch (error) {
+      console.error(`Failed to load .ex3 file from ${url}:`, error);
+      return null;
+    }
+  },
+
+  /**
+   * Load an .exwl3 file specifically
+   */
+  async loadExwl3File(url) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const content = await response.text();
+      return this.parseExwl3(content);
+    } catch (error) {
+      console.error(`Failed to load .exwl3 file from ${url}:`, error);
+      return null;
+    }
+  },
+
+  /**
+   * Load an .exws3 file specifically
+   */
+  async loadExws3File(url) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const content = await response.text();
+      return this.parseExws3(content);
+    } catch (error) {
+      console.error(`Failed to load .exws3 file from ${url}:`, error);
+      return null;
+    }
+  },
+
+  /**
+   * Inject CSS into the page
+   */
+  injectCSS(cssContent, id = '') {
+    const style = document.createElement('style');
+    if (id) style.id = id;
+    style.textContent = cssContent;
+    document.head.appendChild(style);
+  },
+
+  /**
+   * Inject HTML into a target element
+   * position: 'prepend' (default) | 'append'
+   */
+  injectHTML(target, htmlContent, position = 'prepend') {
+    const el = document.querySelector(target);
+    if (el) {
+      el.insertAdjacentHTML(position === 'append' ? 'beforeend' : 'afterbegin', htmlContent);
+    } else {
+      console.warn(`injectHTML: target '${target}' not found`);
+    }
+  },
+
+  /**
+   * Remove elements matching a selector
+   */
+  removeElement(selector) {
+    document.querySelectorAll(selector).forEach(el => el.remove());
+  },
+
+  /**
+   * Get DOM element safely
+   */
+  getElement(selector) {
+    return document.querySelector(selector);
+  },
+
+  /**
+   * Event emitter helper for sections
+   */
+  createEventBus() {
+    const listeners = {};
+    return {
+      on(event, handler) {
+        if (!listeners[event]) listeners[event] = [];
+        listeners[event].push(handler);
+      },
+      off(event, handler) {
+        if (listeners[event]) {
+          listeners[event] = listeners[event].filter(h => h !== handler);
+        }
+      },
+      emit(event, data) {
+        if (listeners[event]) {
+          listeners[event].forEach(handler => handler(data));
+        }
+      }
+    };
+  },
+
+  /**
+   * Validate .exwl3 or .exws3 structure
+   */
+  validateMod(data) {
+    const errors = [];
+    
+    if (!data.name) errors.push('Missing required field: name');
+    if (!data.type) errors.push('Missing required field: type (layer or section)');
+    if (data.type && !['layer', 'section'].includes(data.type)) {
+      errors.push(`Invalid type: ${data.type} (must be 'layer' or 'section')`);
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  },
+
+  /**
+   * Validate .exwl3 structure (legacy)
+   */
+  validateExwl3(data) {
+    return this.validateMod(data);
+  },
+
+  /**
+   * Validate .exws3 structure (legacy)
+   */
+  validateExws3(data) {
+    return this.validateMod(data);
+  },
+
+  /**
+   * Validate .exw3 structure (legacy - for backward compatibility)
+   */
+  validateExw3(data) {
+    return this.validateMod(data);
+  }
+};
+
+// Export for use
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = EXW3Utils;
+}
+
+
+          /**
+ * EXW3 Kernel Core
+ * The foundation for all mods to extend
+ */
+
+class EXW3Kernel {
+  constructor() {
+    this.layers = new Map();
+    this.sections = new Map();
+    this.hooks = new Map();
+    this.config = {};
+    this.sectionPermissions = new Map(); // sectionName -> string[] of allowed roles
+    this.globalState = new Map(); // Shared state between mods
+    this.eventBus = this._createEventBus(); // Global event system
+    this.storage = this._createStorageAPI(); // Enhanced storage API
+    this.router = this._createRouter(); // Navigation router
+    this.theme = this._createThemeAPI(); // Theme management
+    this.notifications = []; // Notification queue
+    this.middleware = new Map(); // Middleware system
+    this.plugins = new Map(); // Plugin registry
+    this.watchers = new Map(); // DOM watchers
+    this.animations = this._createAnimationAPI(); // Animation system
+    this.validators = new Map(); // Validation rules
+    this.transformers = new Map(); // Data transformers
+    this.cache = new Map(); // Cache system
+    this.scheduler = this._createScheduler(); // Task scheduler
+    this.i18n = this._createI18nAPI(); // Internationalization
+    this.security = this._createSecurityAPI(); // Security utilities
+
+    // Initialize default hooks
+    this.registerHook('before-init');
+    this.registerHook('after-init');
+    this.registerHook('before-render');
+    this.registerHook('after-render');
+    this.registerHook('section-register');
+    this.registerHook('layer-apply');
+    this.registerHook('route-change');
+    this.registerHook('state-change');
+    this.registerHook('theme-change');
+    this.registerHook('middleware-execute');
+    this.registerHook('plugin-load');
+    this.registerHook('validation-fail');
+    this.registerHook('cache-miss');
+  }
+
+  /**
+   * Register a hook that mods can attach to
+   */
+  registerHook(hookName) {
+    if (!this.hooks.has(hookName)) {
+      this.hooks.set(hookName, []);
+    }
+  }
+
+  /**
+   * Attach a callback to a hook
+   */
+  onHook(hookName, callback, priority = 10) {
+    if (!this.hooks.has(hookName)) {
+      console.warn(`Hook '${hookName}' not registered`);
+      return;
+    }
+    this.hooks.get(hookName).push({ callback, priority });
+    // Sort by priority (higher = runs first)
+    this.hooks.get(hookName).sort((a, b) => b.priority - a.priority);
+  }
+
+  /**
+   * Execute all callbacks for a hook
+   */
+  async executeHook(hookName, data = {}) {
+    if (!this.hooks.has(hookName)) return;
+    
+    const callbacks = this.hooks.get(hookName);
+    for (const { callback } of callbacks) {
+      try {
+        await callback(data);
+      } catch (error) {
+        console.error(`Error in hook '${hookName}':`, error);
+      }
+    }
+  }
+
+  /**
+   * Register a section (app-like module)
+   */
+  registerSection(name, sectionModule) {
+    this.sections.set(name, sectionModule);
+    this.executeHook('section-register', { name, module: sectionModule });
+    console.log(`✓ Section registered: ${name}`);
+  }
+
+  /**
+   * Get a registered section
+   */
+  getSection(name) {
+    return this.sections.get(name);
+  }
+
+  /**
+   * Register a layer (modifies kernel or sections)
+   */
+  registerLayer(name, layerModule) {
+    this.layers.set(name, layerModule);
+    console.log(`✓ Layer registered: ${name}`);
+  }
+
+  /**
+   * Get a registered layer
+   */
+  getLayer(name) {
+    return this.layers.get(name);
+  }
+
+  /**
+   * Apply a layer's modifications
+   */
+  applyLayer(layerName) {
+    const layer = this.layers.get(layerName);
+    if (!layer) {
+      console.error(`Layer '${layerName}' not found`);
+      return false;
+    }
+
+    try {
+      if (layer.onApply) {
+        layer.onApply(this);
+      }
+      this.executeHook('layer-apply', { name: layerName, layer });
+      console.log(`✓ Layer applied: ${layerName}`);
+      return true;
+    } catch (error) {
+      console.error(`Error applying layer '${layerName}':`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Initialize the kernel and load all configured mods
+   */
+  async init(configData = {}) {
+    this.config = configData;
+    await this._initializeSystems();
+    await this.executeHook('before-init');
+
+    // Init sections (CSS injection, JS globals, init blocks)
+    if (configData.sections && Array.isArray(configData.sections)) {
+      for (const sectionName of configData.sections) {
+        const section = this.getSection(sectionName);
+        if (section && section.init) {
+          await section.init(this);
+        }
+      }
+    }
+
+    await this.executeHook('after-init');
+  }
+
+  /**
+   * Render the site with active sections
+   */
+  async render(containerId = 'app') {
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`Container '#${containerId}' not found`);
+      return;
+    }
+
+    await this.executeHook('before-render');
+
+    container.innerHTML = '';
+    
+    // Create section containers in config order
+    // Support both unified 'mods' and legacy 'sections'
+    const sectionOrder = this.config.mods || this.config.sections || [];
+    for (const name of sectionOrder) {
+      const section = this.sections.get(name);
+      if (!section) continue;
+
+      // Skip sections the current user doesn't have permission to see
+      if (!this.canViewSection(name)) continue;
+
+      const sectionEl = document.createElement('div');
+      sectionEl.id = `section-${name}`;
+      sectionEl.className = 'exw3-section';
+      container.appendChild(sectionEl);
+
+      if (section.render) {
+        await section.render(sectionEl, this);
+      }
+    }
+
+    await this.executeHook('after-render');
+  }
+
+  /**
+   * Register required roles for a section.
+   * roles: string[] e.g. ['admin'] or ['admin','moderator']
+   * Empty/omitted = visible to everyone.
+   */
+  registerSectionPermission(sectionName, roles = []) {
+    this.sectionPermissions.set(sectionName, roles);
+  }
+
+  /**
+   * Check if the current user can see a section.
+   */
+  canViewSection(sectionName) {
+    const required = this.sectionPermissions.get(sectionName);
+    if (!required || required.length === 0) return true;
+    const user = window.exw3CurrentUser ? window.exw3CurrentUser() : null;
+    if (!user) return false;
+    const users = JSON.parse(localStorage.getItem('exw3-users') || '{}');
+    const role = (users[user] && users[user].role) || 'user';
+    return required.includes(role);
+  }
+
+  /**
+   * Show a full-screen overlay above everything
+   */
+  showOverlay(html = '', css = '') {
+    this.hideOverlay(); // remove any existing one first
+
+    if (css) {
+      const style = document.createElement('style');
+      style.id = 'exw3-overlay-style';
+      style.textContent = css;
+      document.head.appendChild(style);
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'exw3-overlay';
+    overlay.style.cssText = [
+      'position:fixed', 'inset:0', 'z-index:10000',
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'background:rgba(0,0,0,0.85)', 'backdrop-filter:blur(4px)'
+    ].join(';');
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  /**
+   * Remove the overlay
+   */
+  hideOverlay() {
+    document.getElementById('exw3-overlay')?.remove();
+    document.getElementById('exw3-overlay-style')?.remove();
+  }
+
+  /**
+   * Get all registered sections
+   */
+  listSections() {
+    return Array.from(this.sections.keys());
+  }
+
+  /**
+   * Get all registered layers
+   */
+  listLayers() {
+    return Array.from(this.layers.keys());
+  }
+
+  /**
+   * Debug: log current state
+   */
+  debug() {
+    console.log('=== EXW3 Kernel State ===');
+    console.log('Sections:', this.listSections());
+    console.log('Layers:', this.listLayers());
+    console.log('Config:', this.config);
+    console.log('Global State:', Object.fromEntries(this.globalState));
+    console.log('Router:', this.router.getCurrentRoute());
+  }
+
+  // ========== GLOBAL STATE MANAGEMENT ==========
+
+  /**
+   * Set a global state value accessible to all mods
+   */
+  setState(key, value) {
+    const oldValue = this.globalState.get(key);
+    this.globalState.set(key, value);
+    this.executeHook('state-change', { key, value, oldValue });
+    this.eventBus.emit('state:' + key, { value, oldValue });
+  }
+
+  /**
+   * Get a global state value
+   */
+  getState(key, defaultValue = null) {
+    return this.globalState.has(key) ? this.globalState.get(key) : defaultValue;
+  }
+
+  /**
+   * Watch for state changes
+   */
+  watchState(key, callback) {
+    this.eventBus.on('state:' + key, callback);
+  }
+
+  /**
+   * Remove all state
+   */
+  clearState() {
+    this.globalState.clear();
+  }
+
+  // ========== EVENT BUS ==========
+
+  _createEventBus() {
+    const listeners = new Map();
+    return {
+      on: (event, handler) => {
+        if (!listeners.has(event)) listeners.set(event, []);
+        listeners.get(event).push(handler);
+      },
+      off: (event, handler) => {
+        if (listeners.has(event)) {
+          listeners.set(event, listeners.get(event).filter(h => h !== handler));
+        }
+      },
+      emit: (event, data) => {
+        if (listeners.has(event)) {
+          listeners.get(event).forEach(handler => {
+            try { handler(data); } catch (e) { console.error('Event handler error:', e); }
+          });
+        }
+      },
+      once: (event, handler) => {
+        const wrapper = (data) => {
+          handler(data);
+          this.eventBus.off(event, wrapper);
+        };
+        this.eventBus.on(event, wrapper);
+      },
+      listEvents: () => Array.from(listeners.keys())
+    };
+  }
+
+  // ========== STORAGE API ==========
+
+  _createStorageAPI() {
+    return {
+      local: {
+        get: (key, defaultValue = null) => {
+          const val = localStorage.getItem('exw3:' + key);
+          return val ? JSON.parse(val) : defaultValue;
+        },
+        set: (key, value) => {
+          localStorage.setItem('exw3:' + key, JSON.stringify(value));
+        },
+        remove: (key) => localStorage.removeItem('exw3:' + key),
+        clear: () => {
+          Object.keys(localStorage).forEach(k => {
+            if (k.startsWith('exw3:')) localStorage.removeItem(k);
+          });
+        },
+        keys: () => Object.keys(localStorage).filter(k => k.startsWith('exw3:')).map(k => k.slice(5))
+      },
+      session: {
+        get: (key, defaultValue = null) => {
+          const val = sessionStorage.getItem('exw3:' + key);
+          return val ? JSON.parse(val) : defaultValue;
+        },
+        set: (key, value) => {
+          sessionStorage.setItem('exw3:' + key, JSON.stringify(value));
+        },
+        remove: (key) => sessionStorage.removeItem('exw3:' + key),
+        clear: () => {
+          Object.keys(sessionStorage).forEach(k => {
+            if (k.startsWith('exw3:')) sessionStorage.removeItem(k);
+          });
+        },
+        keys: () => Object.keys(sessionStorage).filter(k => k.startsWith('exw3:')).map(k => k.slice(5))
+      }
+    };
+  }
+
+  // ========== ROUTER API ==========
+
+  _createRouter() {
+    let currentRoute = window.location.hash.slice(1) || 'dashboard';
+    
+    const router = {
+      navigate: (route) => {
+        window.location.hash = route;
+      },
+      getCurrentRoute: () => currentRoute,
+      onRouteChange: (callback) => {
+        this.eventBus.on('route-change', callback);
+      },
+      getParams: () => {
+        const params = {};
+        const search = window.location.search.slice(1);
+        search.split('&').forEach(pair => {
+          const [key, value] = pair.split('=');
+          if (key) params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+        });
+        return params;
+      }
+    };
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', () => {
+      const newRoute = window.location.hash.slice(1) || 'dashboard';
+      const oldRoute = currentRoute;
+      currentRoute = newRoute;
+      this.executeHook('route-change', { route: newRoute, oldRoute });
+      this.eventBus.emit('route-change', { route: newRoute, oldRoute });
+    });
+
+    return router;
+  }
+
+  // ========== THEME API ==========
+
+  _createThemeAPI() {
+    return {
+      set: (themeName) => {
+        document.body.className = document.body.className.replace(/exw3-theme-\S+/g, '');
+        document.body.classList.add('exw3-theme-' + themeName);
+        this.executeHook('theme-change', { theme: themeName });
+        this.eventBus.emit('theme-change', { theme: themeName });
+      },
+      get: () => {
+        const match = document.body.className.match(/exw3-theme-(\S+)/);
+        return match ? match[1] : 'default';
+      },
+      toggle: (theme1, theme2) => {
+        const current = this.theme.get();
+        this.theme.set(current === theme1 ? theme2 : theme1);
+      },
+      addCustomCSS: (css, id = null) => {
+        const style = document.createElement('style');
+        if (id) style.id = 'exw3-theme-' + id;
+        style.textContent = css;
+        document.head.appendChild(style);
+      }
+    };
+  }
+
+  // ========== NOTIFICATION API ==========
+
+  /**
+   * Show a notification to the user
+   */
+  notify(message, type = 'info', duration = 3000) {
+    const notification = { message, type, duration, id: Date.now() };
+    this.notifications.push(notification);
+    this.eventBus.emit('notification', notification);
+    
+    // Auto-create notification UI if not exists
+    if (!document.getElementById('exw3-notifications')) {
+      this._createNotificationContainer();
+    }
+    
+    this._showNotification(notification);
+    
+    if (duration > 0) {
+      setTimeout(() => this._removeNotification(notification.id), duration);
+    }
+    
+    return notification.id;
+  }
+
+  _createNotificationContainer() {
+    const container = document.createElement('div');
+    container.id = 'exw3-notifications';
+    container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:400px;';
+    document.body.appendChild(container);
+  }
+
+  _showNotification(notification) {
+    const container = document.getElementById('exw3-notifications');
+    if (!container) return;
+
+    const el = document.createElement('div');
+    el.id = 'exw3-notif-' + notification.id;
+    el.className = 'exw3-notification exw3-notification-' + notification.type;
+    el.style.cssText = 'padding:12px 16px;border-radius:6px;background:white;box-shadow:0 4px 12px rgba(0,0,0,0.15);border-left:4px solid;animation:slideIn 0.3s;cursor:pointer;';
+    
+    const colors = {
+      info: '#3498db',
+      success: '#2ecc71',
+      warning: '#f39c12',
+      error: '#e74c3c'
+    };
+    el.style.borderLeftColor = colors[notification.type] || colors.info;
+    el.textContent = notification.message;
+    
+    el.addEventListener('click', () => this._removeNotification(notification.id));
+    container.appendChild(el);
+  }
+
+  _removeNotification(id) {
+    const el = document.getElementById('exw3-notif-' + id);
+    if (el) {
+      el.style.animation = 'slideOut 0.3s';
+      setTimeout(() => el.remove(), 300);
+    }
+    this.notifications = this.notifications.filter(n => n.id !== id);
+  }
+
+  // ========== DOM MANIPULATION HELPERS ==========
+
+  /**
+   * Query selector helper
+   */
+  $(selector) {
+    return document.querySelector(selector);
+  }
+
+  /**
+   * Query selector all helper
+   */
+  $$(selector) {
+    return Array.from(document.querySelectorAll(selector));
+  }
+
+  /**
+   * Create element helper
+   */
+  createElement(tag, attrs = {}, children = []) {
+    const el = document.createElement(tag);
+    Object.entries(attrs).forEach(([key, value]) => {
+      if (key === 'style' && typeof value === 'object') {
+        Object.assign(el.style, value);
+      } else if (key === 'class') {
+        el.className = value;
+      } else if (key.startsWith('on')) {
+        el.addEventListener(key.slice(2).toLowerCase(), value);
+      } else {
+        el.setAttribute(key, value);
+      }
+    });
+    children.forEach(child => {
+      if (typeof child === 'string') {
+        el.appendChild(document.createTextNode(child));
+      } else {
+        el.appendChild(child);
+      }
+    });
+    return el;
+  }
+
+  // ========== AJAX HELPERS ==========
+
+  /**
+   * Fetch JSON helper
+   */
+  async fetchJSON(url, options = {}) {
+    const response = await fetch(url, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...options.headers }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  }
+
+  /**
+   * POST JSON helper
+   */
+  async postJSON(url, data, options = {}) {
+    return this.fetchJSON(url, {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  // ========== UTILITY METHODS ==========
+
+  /**
+   * Debounce function
+   */
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  /**
+   * Throttle function
+   */
+  throttle(func, limit) {
+    let inThrottle;
+    return function(...args) {
+      if (!inThrottle) {
+        func.apply(this, args);
+        inThrottle = true;
+        setTimeout(() => inThrottle = false, limit);
+      }
+    };
+  }
+
+  /**
+   * Deep clone object
+   */
+  clone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  /**
+   * Merge objects deeply
+   */
+  merge(target, ...sources) {
+    if (!sources.length) return target;
+    const source = sources.shift();
+    
+    if (typeof target === 'object' && typeof source === 'object') {
+      for (const key in source) {
+        if (typeof source[key] === 'object' && !Array.isArray(source[key])) {
+          if (!target[key]) Object.assign(target, { [key]: {} });
+          this.merge(target[key], source[key]);
+        } else {
+          Object.assign(target, { [key]: source[key] });
+        }
+      }
+    }
+    
+    return this.merge(target, ...sources);
+  }
+
+  // ========== MIDDLEWARE SYSTEM ==========
+
+  /**
+   * Register middleware that runs before/after operations
+   */
+  registerMiddleware(name, handler, options = {}) {
+    this.middleware.set(name, {
+      handler,
+      priority: options.priority || 10,
+      enabled: options.enabled !== false,
+      type: options.type || 'before' // 'before' | 'after' | 'around'
+    });
+  }
+
+  /**
+   * Execute middleware chain
+   */
+  async executeMiddleware(context, data) {
+    const middlewares = Array.from(this.middleware.values())
+      .filter(m => m.enabled)
+      .sort((a, b) => b.priority - a.priority);
+
+    let result = data;
+    for (const mw of middlewares) {
+      try {
+        result = await mw.handler(context, result, this);
+        await this.executeHook('middleware-execute', { context, middleware: mw });
+      } catch (error) {
+        console.error('Middleware error:', error);
+      }
+    }
+    return result;
+  }
+
+  // ========== PLUGIN SYSTEM ==========
+
+  /**
+   * Register a plugin with lifecycle methods
+   */
+  registerPlugin(name, plugin) {
+    if (this.plugins.has(name)) {
+      console.warn(`Plugin '${name}' already registered`);
+      return;
+    }
+
+    this.plugins.set(name, {
+      name,
+      install: plugin.install || (() => {}),
+      uninstall: plugin.uninstall || (() => {}),
+      config: plugin.config || {},
+      version: plugin.version || '1.0.0',
+      dependencies: plugin.dependencies || [],
+      installed: false
+    });
+
+    this.executeHook('plugin-load', { name, plugin });
+  }
+
+  /**
+   * Install a plugin
+   */
+  async installPlugin(name) {
+    const plugin = this.plugins.get(name);
+    if (!plugin) {
+      console.error(`Plugin '${name}' not found`);
+      return false;
+    }
+
+    if (plugin.installed) {
+      console.warn(`Plugin '${name}' already installed`);
+      return true;
+    }
+
+    // Check dependencies
+    for (const dep of plugin.dependencies) {
+      if (!this.plugins.has(dep) || !this.plugins.get(dep).installed) {
+        console.error(`Plugin '${name}' requires '${dep}'`);
+        return false;
+      }
+    }
+
+    try {
+      await plugin.install(this);
+      plugin.installed = true;
+      console.log(`✓ Plugin '${name}' installed`);
+      return true;
+    } catch (error) {
+      console.error(`Failed to install plugin '${name}':`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Uninstall a plugin
+   */
+  async uninstallPlugin(name) {
+    const plugin = this.plugins.get(name);
+    if (!plugin || !plugin.installed) return false;
+
+    try {
+      await plugin.uninstall(this);
+      plugin.installed = false;
+      console.log(`✓ Plugin '${name}' uninstalled`);
+      return true;
+    } catch (error) {
+      console.error(`Failed to uninstall plugin '${name}':`, error);
+      return false;
+    }
+  }
+
+  // ========== DOM WATCHERS ==========
+
+  /**
+   * Watch DOM element for changes
+   */
+  watchElement(selector, callback, options = {}) {
+    const element = typeof selector === 'string' ? this.$(selector) : selector;
+    if (!element) return null;
+
+    const observer = new MutationObserver((mutations) => {
+      callback(mutations, element);
+    });
+
+    observer.observe(element, {
+      childList: options.childList !== false,
+      attributes: options.attributes || false,
+      characterData: options.characterData || false,
+      subtree: options.subtree || false,
+      attributeOldValue: options.attributeOldValue || false,
+      characterDataOldValue: options.characterDataOldValue || false
+    });
+
+    const watcherId = Date.now() + Math.random();
+    this.watchers.set(watcherId, observer);
+    return watcherId;
+  }
+
+  /**
+   * Stop watching an element
+   */
+  unwatchElement(watcherId) {
+    const observer = this.watchers.get(watcherId);
+    if (observer) {
+      observer.disconnect();
+      this.watchers.delete(watcherId);
+    }
+  }
+
+  // ========== ANIMATION API ==========
+
+  _createAnimationAPI() {
+    return {
+      animate: (element, keyframes, options = {}) => {
+        const el = typeof element === 'string' ? this.$(element) : element;
+        if (!el) return null;
+        return el.animate(keyframes, {
+          duration: options.duration || 300,
+          easing: options.easing || 'ease',
+          fill: options.fill || 'forwards',
+          ...options
+        });
+      },
+      
+      fadeIn: (element, duration = 300) => {
+        const el = typeof element === 'string' ? this.$(element) : element;
+        if (!el) return null;
+        return el.animate([
+          { opacity: 0 },
+          { opacity: 1 }
+        ], { duration, fill: 'forwards' });
+      },
+      
+      fadeOut: (element, duration = 300) => {
+        const el = typeof element === 'string' ? this.$(element) : element;
+        if (!el) return null;
+        return el.animate([
+          { opacity: 1 },
+          { opacity: 0 }
+        ], { duration, fill: 'forwards' });
+      },
+      
+      slideIn: (element, direction = 'left', duration = 300) => {
+        const el = typeof element === 'string' ? this.$(element) : element;
+        if (!el) return null;
+        const transforms = {
+          left: ['translateX(-100%)', 'translateX(0)'],
+          right: ['translateX(100%)', 'translateX(0)'],
+          up: ['translateY(-100%)', 'translateY(0)'],
+          down: ['translateY(100%)', 'translateY(0)']
+        };
+        return el.animate([
+          { transform: transforms[direction][0], opacity: 0 },
+          { transform: transforms[direction][1], opacity: 1 }
+        ], { duration, fill: 'forwards', easing: 'ease-out' });
+      },
+      
+      pulse: (element, duration = 600) => {
+        const el = typeof element === 'string' ? this.$(element) : element;
+        if (!el) return null;
+        return el.animate([
+          { transform: 'scale(1)' },
+          { transform: 'scale(1.05)' },
+          { transform: 'scale(1)' }
+        ], { duration, easing: 'ease-in-out' });
+      },
+      
+      shake: (element, duration = 500) => {
+        const el = typeof element === 'string' ? this.$(element) : element;
+        if (!el) return null;
+        return el.animate([
+          { transform: 'translateX(0)' },
+          { transform: 'translateX(-10px)' },
+          { transform: 'translateX(10px)' },
+          { transform: 'translateX(-10px)' },
+          { transform: 'translateX(10px)' },
+          { transform: 'translateX(0)' }
+        ], { duration, easing: 'ease-in-out' });
+      }
+    };
+  }
+
+  // ========== VALIDATION SYSTEM ==========
+
+  /**
+   * Register a validation rule
+   */
+  registerValidator(name, validator) {
+    this.validators.set(name, validator);
+  }
+
+  /**
+   * Validate data against rules
+   */
+  validate(data, rules) {
+    const errors = {};
+    
+    for (const [field, fieldRules] of Object.entries(rules)) {
+      const value = data[field];
+      const fieldErrors = [];
+      
+      for (const rule of fieldRules) {
+        const [ruleName, ...params] = rule.split(':');
+        const validator = this.validators.get(ruleName);
+        
+        if (validator) {
+          const result = validator(value, params, data);
+          if (result !== true) {
+            fieldErrors.push(result);
+          }
+        }
+      }
+      
+      if (fieldErrors.length > 0) {
+        errors[field] = fieldErrors;
+      }
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      this.executeHook('validation-fail', { data, rules, errors });
+    }
+    
+    return {
+      valid: Object.keys(errors).length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Initialize default validators
+   */
+  _initDefaultValidators() {
+    this.registerValidator('required', (value) => {
+      return value !== null && value !== undefined && value !== '' || 'This field is required';
+    });
+    
+    this.registerValidator('email', (value) => {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return !value || regex.test(value) || 'Invalid email address';
+    });
+    
+    this.registerValidator('min', (value, [min]) => {
+      return !value || value.length >= parseInt(min) || `Minimum length is ${min}`;
+    });
+    
+    this.registerValidator('max', (value, [max]) => {
+      return !value || value.length <= parseInt(max) || `Maximum length is ${max}`;
+    });
+    
+    this.registerValidator('numeric', (value) => {
+      return !value || !isNaN(value) || 'Must be a number';
+    });
+    
+    this.registerValidator('url', (value) => {
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        return 'Invalid URL';
+      }
+    });
+  }
+
+  // ========== DATA TRANSFORMERS ==========
+
+  /**
+   * Register a data transformer
+   */
+  registerTransformer(name, transformer) {
+    this.transformers.set(name, transformer);
+  }
+
+  /**
+   * Transform data using registered transformer
+   */
+  transform(data, transformerName, ...args) {
+    const transformer = this.transformers.get(transformerName);
+    if (!transformer) {
+      console.warn(`Transformer '${transformerName}' not found`);
+      return data;
+    }
+    return transformer(data, ...args);
+  }
+
+  /**
+   * Initialize default transformers
+   */
+  _initDefaultTransformers() {
+    this.registerTransformer('uppercase', (str) => String(str).toUpperCase());
+    this.registerTransformer('lowercase', (str) => String(str).toLowerCase());
+    this.registerTransformer('capitalize', (str) => {
+      const s = String(str);
+      return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+    });
+    this.registerTransformer('trim', (str) => String(str).trim());
+    this.registerTransformer('truncate', (str, length = 50) => {
+      const s = String(str);
+      return s.length > length ? s.slice(0, length) + '...' : s;
+    });
+    this.registerTransformer('slugify', (str) => {
+      return String(str)
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    });
+    this.registerTransformer('currency', (num, symbol = '$') => {
+      return symbol + Number(num).toFixed(2);
+    });
+    this.registerTransformer('percentage', (num) => {
+      return (Number(num) * 100).toFixed(2) + '%';
+    });
+  }
+
+  // ========== CACHE SYSTEM ==========
+
+  /**
+   * Set cache value with optional TTL
+   */
+  setCache(key, value, ttl = null) {
+    this.cache.set(key, {
+      value,
+      expires: ttl ? Date.now() + ttl : null
+    });
+  }
+
+  /**
+   * Get cache value
+   */
+  getCache(key, defaultValue = null) {
+    const cached = this.cache.get(key);
+    if (!cached) {
+      this.executeHook('cache-miss', { key });
+      return defaultValue;
+    }
+    
+    if (cached.expires && Date.now() > cached.expires) {
+      this.cache.delete(key);
+      this.executeHook('cache-miss', { key, reason: 'expired' });
+      return defaultValue;
+    }
+    
+    return cached.value;
+  }
+
+  /**
+   * Clear cache
+   */
+  clearCache(pattern = null) {
+    if (!pattern) {
+      this.cache.clear();
+    } else {
+      const regex = new RegExp(pattern);
+      for (const key of this.cache.keys()) {
+        if (regex.test(key)) {
+          this.cache.delete(key);
+        }
+      }
+    }
+  }
+
+  // ========== TASK SCHEDULER ==========
+
+  _createScheduler() {
+    const tasks = new Map();
+    
+    return {
+      schedule: (name, callback, interval) => {
+        if (tasks.has(name)) {
+          console.warn(`Task '${name}' already scheduled`);
+          return;
+        }
+        
+        const id = setInterval(callback, interval);
+        tasks.set(name, { id, callback, interval });
+      },
+      
+      scheduleOnce: (name, callback, delay) => {
+        if (tasks.has(name)) {
+          console.warn(`Task '${name}' already scheduled`);
+          return;
+        }
+        
+        const id = setTimeout(() => {
+          callback();
+          tasks.delete(name);
+        }, delay);
+        tasks.set(name, { id, callback, delay, once: true });
+      },
+      
+      cancel: (name) => {
+        const task = tasks.get(name);
+        if (task) {
+          if (task.once) {
+            clearTimeout(task.id);
+          } else {
+            clearInterval(task.id);
+          }
+          tasks.delete(name);
+        }
+      },
+      
+      cancelAll: () => {
+        for (const [name, task] of tasks) {
+          if (task.once) {
+            clearTimeout(task.id);
+          } else {
+            clearInterval(task.id);
+          }
+        }
+        tasks.clear();
+      },
+      
+      list: () => Array.from(tasks.keys())
+    };
+  }
+
+  // ========== INTERNATIONALIZATION ==========
+
+  _createI18nAPI() {
+    let currentLocale = 'en';
+    const translations = new Map();
+    
+    return {
+      setLocale: (locale) => {
+        currentLocale = locale;
+        this.eventBus.emit('locale-change', { locale });
+      },
+      
+      getLocale: () => currentLocale,
+      
+      addTranslations: (locale, messages) => {
+        if (!translations.has(locale)) {
+          translations.set(locale, {});
+        }
+        Object.assign(translations.get(locale), messages);
+      },
+      
+      t: (key, params = {}) => {
+        const messages = translations.get(currentLocale) || {};
+        let message = messages[key] || key;
+        
+        // Replace parameters
+        for (const [param, value] of Object.entries(params)) {
+          message = message.replace(new RegExp(`{${param}}`, 'g'), value);
+        }
+        
+        return message;
+      },
+      
+      hasTranslation: (key, locale = currentLocale) => {
+        const messages = translations.get(locale) || {};
+        return key in messages;
+      }
+    };
+  }
+
+  // ========== SECURITY API ==========
+
+  _createSecurityAPI() {
+    return {
+      sanitizeHTML: (html) => {
+        const div = document.createElement('div');
+        div.textContent = html;
+        return div.innerHTML;
+      },
+      
+      escapeHTML: (str) => {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      },
+      
+      sanitizeURL: (url) => {
+        try {
+          const parsed = new URL(url);
+          if (!['http:', 'https:'].includes(parsed.protocol)) {
+            return '#';
+          }
+          return url;
+        } catch {
+          return '#';
+        }
+      },
+      
+      generateToken: (length = 32) => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let token = '';
+        for (let i = 0; i < length; i++) {
+          token += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return token;
+      },
+      
+      hash: async (str) => {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(str);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      },
+      
+      validateCSRF: (token) => {
+        const stored = this.storage.session.get('csrf-token');
+        return stored === token;
+      },
+      
+      generateCSRF: () => {
+        const token = this.security.generateToken();
+        this.storage.session.set('csrf-token', token);
+        return token;
+      }
+    };
+  }
+
+  // ========== INITIALIZATION ==========
+
+  /**
+   * Initialize kernel with all systems
+   */
+  async _initializeSystems() {
+    this._initDefaultValidators();
+    this._initDefaultTransformers();
+  }
+}
+
+// Export for use
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = EXW3Kernel;
+}
+
+
+          /**
+ * EXW3 Mod Manager
+ * Handles loading and managing layers and sections from .exw3 files
+ */
+
+class EXW3ModManager {
+  constructor(kernel, config = {}) {
+    this.kernel = kernel;
+    this.loadedMods = new Map();
+    
+    // Use config-defined structure or defaults
+    const structure = config.structure || {};
+    this.baseDir = structure.modsFolder || 'Mods';
+    this.adminDir = structure.adminFolder || 'Mods/Admin';
+    this.examplesDir = structure.examplesFolder || 'Mods/Examples';
+  }
+
+  /**
+   * Load all mods from configuration
+   */
+  async loadAllMods(config) {
+    console.log('Starting mod load...');
+
+    // Auto-discovery: if mods array is empty or "*", scan the mods folder
+    if (!config.mods || config.mods.length === 0 || (config.mods.length === 1 && config.mods[0] === '*')) {
+      console.log('🔍 Auto-discovering mods...');
+      await this.autoDiscoverMods();
+    }
+    // Load unified mods list
+    else if (config.mods && Array.isArray(config.mods)) {
+      for (const modConfig of config.mods) {
+        await this.loadMod(modConfig);
+      }
+    }
+    // Legacy support for separate layers/sections
+    else {
+      if (config.layers && Array.isArray(config.layers)) {
+        for (const layerConfig of config.layers) {
+          await this.loadLayer(layerConfig);
+        }
+      }
+
+      if (config.sections && Array.isArray(config.sections)) {
+        for (const sectionConfig of config.sections) {
+          await this.loadSection(sectionConfig);
+        }
+      }
+    }
+
+    console.log('✓ All mods loaded');
+  }
+
+  /**
+   * Auto-discover mods from the mods folder
+   */
+  async autoDiscoverMods() {
+    const discoveredMods = [];
+    
+    // Try to get mod list from server endpoint
+    try {
+      const response = await fetch('/__mods_list__');
+      if (response.ok) {
+        const modsList = await response.json();
+        console.log(`📦 Found ${modsList.length} mods:`, modsList.map(m => m.name).join(', '));
+        
+        // Load all discovered mods
+        for (const mod of modsList) {
+          await this.loadModFromPath(mod.name, mod.path);
+        }
+        return;
+      }
+    } catch (error) {
+      console.warn('Server does not support auto-discovery endpoint');
+    }
+    
+    // Fallback: try common mod names
+    console.log('📦 Using fallback mod discovery...');
+    const commonMods = [
+      'permissions', 'login', 'base-styling', 'dark-mode', 'header-bar',
+      'nav-router', 'dashboard', 'about', 'calc', 'clock', 'links', 
+      'notes', 'settings', 'admin-panel', 'login-settings'
+    ];
+    
+    for (const modName of commonMods) {
+      await this.loadMod(modName);
+    }
+  }
+
+  /**
+   * Scan a folder for .ex3 files (deprecated - use server endpoint)
+   */
+  async scanFolder(folderPath) {
+    return [];
+  }
+
+  /**
+   * Load a mod from a specific path
+   */
+  async loadModFromPath(modName, modPath) {
+    try {
+      const modData = await EXW3Utils.loadModFile(modPath);
+      if (!modData) throw new Error('Failed to parse file');
+
+      const validation = EXW3Utils.validateMod({
+        name: modData.name,
+        type: modData.type
+      });
+
+      if (!validation.valid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
+
+      const modModule = EXW3Utils.createUnifiedModFromEx3(modData, modName);
+      
+      // Register based on type
+      const modType = modData.type || 'both';
+      if (modType === 'layer' || modType === 'both') {
+        this.kernel.registerLayer(modName, modModule);
+        this.loadedMods.set(`layer:${modName}`, modData);
+      }
+      if (modType === 'section' || modType === 'both') {
+        this.kernel.registerSection(modName, modModule);
+        this.loadedMods.set(`section:${modName}`, modData);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error(`Failed to load mod '${modName}' from ${modPath}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Load a mod from unified structure (searches Mods/ and Mods/Admin/)
+   */
+  async loadMod(modConfig) {
+    let modName, modPath;
+
+    if (typeof modConfig === 'string') {
+      modName = modConfig;
+      // Try multiple locations
+      const locations = [
+        `${this.baseDir}/${modName}.ex3`,
+        `${this.adminDir}/${modName}.ex3`,
+        `${this.baseDir}/Layers/${modName}.ex3`,
+        `${this.baseDir}/Sections/${modName}.ex3`
+      ];
+
+      for (const location of locations) {
+        const response = await fetch(location).catch(() => null);
+        if (response && response.ok) {
+          modPath = location;
+          break;
+        }
+      }
+
+      if (!modPath) {
+        console.warn(`Mod '${modName}' not found in any location`);
+        return false;
+      }
+    } else {
+      modName = modConfig.name;
+      modPath = modConfig.path || `${this.baseDir}/${modName}.ex3`;
+    }
+
+    try {
+      const modData = await EXW3Utils.loadModFile(modPath);
+      if (!modData) throw new Error('Failed to parse file');
+
+      const validation = EXW3Utils.validateMod({
+        name: modData.name,
+        type: modData.type
+      });
+
+      if (!validation.valid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
+
+      const modModule = EXW3Utils.createUnifiedModFromEx3(modData, modName);
+      
+      // Register based on type
+      const modType = modData.type || 'both';
+      if (modType === 'layer' || modType === 'both') {
+        this.kernel.registerLayer(modName, modModule);
+        this.loadedMods.set(`layer:${modName}`, modData);
+      }
+      if (modType === 'section' || modType === 'both') {
+        this.kernel.registerSection(modName, modModule);
+        this.loadedMods.set(`section:${modName}`, modData);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error(`Failed to load mod '${modName}':`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Load a single layer from .exwl3 or .ex3 file
+   */
+  async loadLayer(layerConfig) {
+    let layerName, layerPath;
+
+    if (typeof layerConfig === 'string') {
+      layerName = layerConfig;
+      // Try .ex3 first, then fall back to .exwl3
+      layerPath = `${this.baseDir}/Layers/${layerName}.ex3`;
+      const ex3Response = await fetch(layerPath).catch(() => null);
+      if (!ex3Response || !ex3Response.ok) {
+        layerPath = `${this.baseDir}/Layers/${layerName}.exwl3`;
+      }
+    } else {
+      layerName = layerConfig.name;
+      layerPath = layerConfig.path || `${this.baseDir}/Layers/${layerName}.ex3`;
+    }
+
+    try {
+      const modData = await EXW3Utils.loadModFile(layerPath);
+      if (!modData) throw new Error('Failed to parse file');
+
+      const validation = EXW3Utils.validateMod({
+        name: modData.name,
+        type: modData.type
+      });
+
+      if (!validation.valid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
+
+      // Use unified mod if .ex3, otherwise use layer-specific
+      const layerModule = layerPath.endsWith('.ex3')
+        ? EXW3Utils.createUnifiedModFromEx3(modData, layerName)
+        : EXW3Utils.createLayerFromExwl3(modData, layerName);
+      
+      this.kernel.registerLayer(layerName, layerModule);
+      this.loadedMods.set(`layer:${layerName}`, modData);
+
+      return true;
+    } catch (error) {
+      console.error(`Failed to load layer '${layerName}':`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Load a single section from .exws3 or .ex3 file
+   */
+  async loadSection(sectionConfig) {
+    let sectionName, sectionPath;
+
+    if (typeof sectionConfig === 'string') {
+      sectionName = sectionConfig;
+      // Try .ex3 first, then fall back to .exws3
+      sectionPath = `${this.baseDir}/Sections/${sectionName}.ex3`;
+      const ex3Response = await fetch(sectionPath).catch(() => null);
+      if (!ex3Response || !ex3Response.ok) {
+        sectionPath = `${this.baseDir}/Sections/${sectionName}.exws3`;
+      }
+    } else {
+      sectionName = sectionConfig.name;
+      sectionPath = sectionConfig.path || `${this.baseDir}/Sections/${sectionName}.ex3`;
+    }
+
+    try {
+      const modData = await EXW3Utils.loadModFile(sectionPath);
+      if (!modData) throw new Error('Failed to parse file');
+
+      const validation = EXW3Utils.validateMod({
+        name: modData.name,
+        type: modData.type
+      });
+
+      if (!validation.valid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      }
+
+      // Use unified mod if .ex3, otherwise use section-specific
+      const sectionModule = sectionPath.endsWith('.ex3')
+        ? EXW3Utils.createUnifiedModFromEx3(modData, sectionName)
+        : EXW3Utils.createSectionFromExws3(modData, sectionName);
+      
+      this.kernel.registerSection(sectionName, sectionModule);
+      this.loadedMods.set(`section:${sectionName}`, modData);
+
+      return true;
+    } catch (error) {
+      console.error(`Failed to load section '${sectionName}':`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Hot-reload a mod (reload from file)
+   */
+  async reloadMod(modId) {
+    // Try unified structure first
+    if (await this.loadMod(modId)) {
+      return true;
+    }
+    
+    // Legacy support
+    const [type, name] = modId.split(':');
+    if (type === 'layer') {
+      return await this.loadLayer(name);
+    } else if (type === 'section') {
+      return await this.loadSection(name);
+    }
+    return false;
+  }
+
+  /**
+   * List all loaded mods
+   */
+  listLoadedMods() {
+    return Array.from(this.loadedMods.keys());
+  }
+
+  /**
+   * Get info about a loaded mod
+   */
+  getModInfo(modId) {
+    return this.loadedMods.get(modId) || null;
+  }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = EXW3ModManager;
+}
+
+
+          // Expose to global scope
+          window.EXW3Utils = EXW3Utils;
+          window.EXW3Kernel = EXW3Kernel;
+          window.EXW3ModManager = EXW3ModManager;
+
+        })(window);
+
+        // XKernel Initialization
+        (async () => {
+            const kernel = new EXW3Kernel();
+            const config = await fetch('mod-config.json').then(r => r.json());
+            const modManager = new EXW3ModManager(kernel, config);
+            
+            await modManager.loadAllMods(config);
+            await kernel.init(config);
+            
+            const PRE_RENDER_MODS = ['login', 'permissions'];
+            if (config.mods) {
+                for (const modName of config.mods) {
+                    if (PRE_RENDER_MODS.includes(modName)) {
+                        kernel.applyLayer(modName);
+                    }
+                }
+            }
+            
+            await kernel.render('app');
+            
+            if (config.mods) {
+                for (const modName of config.mods) {
+                    if (!PRE_RENDER_MODS.includes(modName)) {
+                        kernel.applyLayer(modName);
+                    }
+                }
+            }
+            
+            window.__exw3 = { kernel, modManager };
+            console.log('✓ EXW3 XKernel initialized');
+        })();
+    </script>
+</body>
+</html>
+}

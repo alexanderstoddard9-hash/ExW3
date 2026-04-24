@@ -1,0 +1,21 @@
+# Ignore everything by default
+/*
+
+# But include these folders
+!dist/
+!Docs/
+
+# Include essential GitHub files
+!.gitignore
+!.gitattributes
+!LICENSE
+!README.md
+
+# Exclude Kiro AI assistant files
+.kiro/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+

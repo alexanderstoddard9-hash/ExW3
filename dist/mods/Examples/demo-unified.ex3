@@ -1,0 +1,156 @@
+@name "demo-unified"
+@version "1.0.0"
+@description "Demo of unified .ex3 format with both layer and section features"
+@type both
+@author "EXW3 Team"
+@priority 10
+
+// ========== LAYER FEATURES ==========
+
+// Global CSS styling
+css {
+  .demo-highlight {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+}
+
+// Custom validator
+validator "demo-input" {
+  if (!value) return 'Input is required';
+  if (value.length < 2) return 'Must be at least 2 characters';
+  return true;
+}
+
+// Custom transformer
+transformer "demo-format" {
+  return '✨ ' + data + ' ✨';
+}
+
+// Internationalization
+i18n "en" {
+  "demo.title": "Unified Demo",
+  "demo.description": "This mod uses both layer and section features!",
+  "demo.button": "Click Me"
+}
+
+i18n "es" {
+  "demo.title": "Demo Unificado",
+  "demo.description": "¡Este mod usa características de capa y sección!",
+  "demo.button": "Haz clic"
+}
+
+// Global initialization (layer)
+init {
+  console.log('🎉 Unified mod loaded!');
+  kernel.setState('demoActive', true);
+}
+
+// ========== SECTION FEATURES ==========
+
+// Section state
+state {
+  "clicks": 0,
+  "message": "Hello from unified mod!"
+}
+
+// Computed property
+computed "clickMessage" {
+  const clicks = context.state.clicks;
+  if (clicks === 0) return 'No clicks yet';
+  if (clicks === 1) return '1 click';
+  return clicks + ' clicks';
+}
+
+// Method
+method "handleClick" {
+  context.state.clicks++;
+  kernel.$('#click-count').textContent = context.computed.clickMessage(kernel);
+  kernel.animations.pulse('#demo-button');
+  kernel.notify('Clicked!', 'success', 1000);
+}
+
+// Watch state changes
+watch clicks {
+  console.log('Clicks changed:', newValue);
+  if (newValue === 10) {
+    kernel.notify('You reached 10 clicks! 🎉', 'success');
+  }
+}
+
+// Section HTML
+html {
+  <div class="exw3-container">
+    <h2 class="demo-highlight">{kernel.i18n.t('demo.title')}</h2>
+    <p>{kernel.i18n.t('demo.description')}</p>
+    
+    <div style="margin: 20px 0;">
+      <button class="exw3-button" id="demo-button">
+        {kernel.i18n.t('demo.button')}
+      </button>
+      <p id="click-count" style="margin-top: 10px; font-weight: bold;">
+        No clicks yet
+      </p>
+    </div>
+    
+    <div style="margin-top: 20px;">
+      <input type="text" id="demo-input" placeholder="Type something..." 
+             style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 200px;">
+      <button class="exw3-button secondary" id="transform-btn">Transform</button>
+      <p id="transformed-text" style="margin-top: 10px; color: #667eea;"></p>
+    </div>
+  </div>
+}
+
+// Section CSS
+css {
+  #demo-button {
+    font-size: 16px;
+    padding: 12px 24px;
+  }
+  
+  #click-count {
+    color: #667eea;
+    font-size: 18px;
+  }
+}
+
+// Section initialization
+init {
+  // Setup click handler
+  kernel.$('#demo-button').addEventListener('click', context.handleClick);
+  
+  // Setup transform handler
+  kernel.$('#transform-btn').addEventListener('click', () => {
+    const input = kernel.$('#demo-input');
+    const text = input.value;
+    
+    // Validate
+    const result = kernel.validate({ text }, {
+      text: ['demo-input']
+    });
+    
+    if (!result.valid) {
+      kernel.notify(result.errors.text[0], 'error');
+      kernel.animations.shake(input);
+      return;
+    }
+    
+    // Transform
+    const transformed = kernel.transform(text, 'demo-format');
+    kernel.$('#transformed-text').textContent = transformed;
+    kernel.animations.fadeIn('#transformed-text');
+  });
+}
+
+// Lifecycle hooks
+onMount {
+  console.log('Demo section mounted');
+}
+
+onUnmount {
+  console.log('Demo section unmounting');
+}
+}

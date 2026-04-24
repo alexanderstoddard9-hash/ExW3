@@ -1,0 +1,71 @@
+EXW3 KERNEL LICENSE AGREEMENT
+
+Copyright (c) 2026 EXW3 Project
+
+TERMS AND CONDITIONS
+
+1. GRANT OF LICENSE
+   This license grants you the right to use the EXW3 kernel (exw3-kernel.js) 
+   in your personal or commercial projects.
+
+2. PERMITTED USES
+   You may:
+   - Use the kernel in unlimited projects
+   - Create and distribute mods using the .ex3 format
+   - Modify the mod-config.json configuration file
+   - Distribute applications built with this kernel
+
+3. RESTRICTIONS
+   You may NOT:
+   - Edit, modify, or attempt to modify the kernel file (exw3-kernel.js)
+   - Reverse engineer, decompile, or disassemble the kernel
+   - Remove or alter any copyright notices from the kernel
+   - Redistribute the kernel separately from a complete application
+   - Create derivative works based on the kernel source code
+   - Attempt to extract, view, or access the kernel source code
+   - Use automated tools to modify or transform the kernel file
+
+4. KERNEL INTEGRITY
+   The kernel file (exw3-kernel.js) must remain unmodified. Any attempt to:
+   - Edit the file contents
+   - Modify the file structure
+   - Alter the file in any way
+   - Circumvent protection mechanisms
+   
+   Will result in immediate termination of this license.
+
+5. MOD SYSTEM
+   All customization and extension of functionality must be done through:
+   - The official mod system (.ex3 files)
+   - The configuration file (mod-config.json)
+   - The documented public API
+
+6. DISTRIBUTION
+   When distributing applications built with this kernel:
+   - Include this license file
+   - Keep the kernel file unmodified
+   - Clearly indicate which parts are your mods
+   - Do not claim ownership of the kernel
+
+7. WARRANTY DISCLAIMER
+   THE KERNEL IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+8. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE KERNEL OR THE
+   USE OR OTHER DEALINGS IN THE KERNEL.
+
+9. TERMINATION
+   This license automatically terminates if you violate any of these terms.
+   Upon termination, you must cease all use of the kernel and destroy all copies.
+
+10. GOVERNING LAW
+    This license shall be governed by and construed in accordance with the laws
+    of your jurisdiction.
+
+BY USING THE EXW3 KERNEL, YOU AGREE TO BE BOUND BY THE TERMS OF THIS LICENSE.
+
+For questions or licensing inquiries, contact: [your-email@example.com]

@@ -1,0 +1,26 @@
+@name "dashboard"
+@version "1.0.0"
+@description "Dashboard section showing site overview"
+@type section
+@dependencies []
+
+html {
+  <div class="exw3-container">
+    <h2>Dashboard</h2>
+    <div class="exw3-grid">
+      <div class="exw3-card">
+        <h3>Welcome</h3>
+        <p>Welcome to EXW3 Local Site. This modular system uses the unified .ex3 format for creating powerful mods.</p>
+      </div>
+      <div class="exw3-card">
+        <h3>Quick Stats</h3>
+        <p><strong>Layers:</strong> Multiple styling and functionality layers can be active</p>
+        <p><strong>Sections:</strong> Each section is an independent app</p>
+      </div>
+      <div class="exw3-card">
+        <h3>Getting Started</h3>
+        <p>Add new mods by creating .ex3 files in the Mods folder. They auto-discover!</p>
+      </div>
+    </div>
+  </div>
+}

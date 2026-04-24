@@ -1,0 +1,119 @@
+@name "links"
+@version "1.0.0"
+@description "Quick links manager — save and open your favourite URLs"
+@type section
+@dependencies []
+
+html {
+  <div class="exw3-container">
+    <h2>Quick Links</h2>
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+      <input type="text" class="exw3-input" id="link-name" placeholder="Label" style="margin: 0; flex: 1; min-width: 100px;">
+      <input type="url" class="exw3-input" id="link-url" placeholder="https://..." style="margin: 0; flex: 2; min-width: 180px;">
+      <button class="exw3-button" id="link-add">Add</button>
+    </div>
+    <div id="links-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;"></div>
+    <p id="links-empty" style="color: #999; font-style: italic;">No links yet. Add one above!</p>
+  </div>
+}
+
+css {
+  .link-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 12px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #333;
+    font-weight: 600;
+    text-align: center;
+    transition: box-shadow 0.2s, transform 0.2s;
+    word-break: break-word;
+  }
+  .link-card:hover {
+    box-shadow: 0 4px 14px rgba(102,126,234,0.25);
+    transform: translateY(-2px);
+  }
+  .link-card .link-domain {
+    font-size: 11px;
+    color: #aaa;
+    font-weight: 400;
+    margin-top: 4px;
+  }
+  .link-remove {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+  }
+  .link-remove:hover { color: #cc4444; }
+}
+
+javascript {
+  let links = JSON.parse(localStorage.getItem('exw3-links') || '[]');
+
+  function saveLinks() {
+    localStorage.setItem('exw3-links', JSON.stringify(links));
+  }
+
+  function getDomain(url) {
+    try { return new URL(url).hostname.replace('www.', ''); } catch { return url; }
+  }
+
+  function renderLinks() {
+    const grid = document.getElementById('links-grid');
+    const empty = document.getElementById('links-empty');
+    if (!grid) return;
+    grid.innerHTML = '';
+    empty.style.display = links.length ? 'none' : 'block';
+    links.forEach((link, i) => {
+      const a = document.createElement('a');
+      a.className = 'link-card';
+      a.href = link.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.innerHTML = `
+        <button class="link-remove" data-i="${i}" title="Remove">✕</button>
+        ${link.name}
+        <span class="link-domain">${getDomain(link.url)}</span>
+      `;
+      a.querySelector('.link-remove').addEventListener('click', e => {
+        e.preventDefault();
+        links.splice(i, 1);
+        saveLinks(); renderLinks();
+      });
+      grid.appendChild(a);
+    });
+  }
+}
+
+init {
+  const nameInput = document.getElementById('link-name');
+  const urlInput = document.getElementById('link-url');
+  const addBtn = document.getElementById('link-add');
+
+  if (addBtn) {
+    addBtn.addEventListener('click', () => {
+      const name = nameInput.value.trim();
+      let url = urlInput.value.trim();
+      if (!name || !url) return;
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      links.push({ name, url });
+      saveLinks(); renderLinks();
+      nameInput.value = '';
+      urlInput.value = '';
+    });
+  }
+  renderLinks();
+}
