@@ -1,6 +1,6 @@
 @xkernel "EXW3"
 @version "2.0"
-@built "2026-04-23T22:38:29.699Z"
+@built "2026-04-24T02:56:40.387Z"
 @license "See KERNEL-LICENSE.txt"
 
 @notice {
@@ -226,13 +226,13 @@ body {
 
 const EXW3Utils = {
   /**
-   * Parse .ex3 unified mod files (combines layer and section features)
+   * Parse .exwl3 layer files
    */
-  parseEx3(content) {
+  parseExwl3(content) {
     content = content.replace(/\r/g, '');
     const result = {
       name: '',
-      type: 'unified', // Can act as both layer and section
+      type: 'layer',
       version: '1.0.0',
       description: '',
       author: '',
@@ -240,28 +240,8 @@ const EXW3Utils = {
       disabled: false,
       modifies: [],
       dependencies: [],
-      
-      // Layer features
       modifications: [],
-      inits: [],
-      lifecycle: {},
-      watchers: [],
-      middleware: [],
-      validators: {},
-      transformers: {},
-      i18n: {},
-      
-      // Section features
-      html: '',
-      css: '',
-      javascript: '',
-      init: null,
-      render: null,
-      computed: {},
-      methods: {},
-      props: {},
-      state: {},
-      sectionWatchers: {}
+      inits: []
     };
 
     // Extract metadata
@@ -273,7 +253,6 @@ const EXW3Utils = {
     const disabledMatch= content.match(/@disabled/);
     const modifiesMatch= content.match(/@modifies\s+([^\n]+)/);
     const depsMatch    = content.match(/@dependencies\s*\[([^\]]*)\]/);
-    const typeMatch    = content.match(/@type\s+(layer|section|both)/);
 
     if (nameMatch)     result.name        = nameMatch[1];
     if (versionMatch)  result.version     = versionMatch[1];
@@ -282,7 +261,6 @@ const EXW3Utils = {
     if (priorityMatch) result.priority    = parseInt(priorityMatch[1], 10);
     if (disabledMatch) result.disabled    = true;
     if (modifiesMatch) result.modifies    = modifiesMatch[1].trim().split(/\s*,\s*/);
-    if (typeMatch)     result.type        = typeMatch[1];
     if (depsMatch && depsMatch[1]) {
       result.dependencies = depsMatch[1].split(',').map(s => s.trim().replace(/['"]/g, '')).filter(Boolean);
     }
@@ -290,36 +268,24 @@ const EXW3Utils = {
     // Parse CSS blocks (multiple allowed)
     const cssRegex = /^css\s*\{([\s\S]*?)\n^\}/gm;
     let cssMatch;
-    let cssContent = '';
     while ((cssMatch = cssRegex.exec(content)) !== null) {
-      cssContent += cssMatch[1].trim() + '\n';
       result.modifications.push({
         type: 'css',
         content: cssMatch[1].trim()
       });
     }
-    result.css = cssContent.trim();
 
-    // Parse HTML blocks
-    const htmlRegex = /^html\s+(prepend|append)?\s*([^\s{]+)?\s*\{([\s\S]*?)\n^\}/gm;
+    // Parse HTML blocks — syntax: html [prepend|append] <selector> { ... }
+    const htmlRegex = /^html\s+(prepend|append)?\s*([^\s{]+)\s*\{([\s\S]*?)\n^\}/gm;
     let htmlMatch;
     while ((htmlMatch = htmlRegex.exec(content)) !== null) {
       const position = htmlMatch[1] || 'prepend';
-      const target = htmlMatch[2];
-      const htmlContent = htmlMatch[3].trim();
-      
-      if (target) {
-        // Layer-style HTML injection
-        result.modifications.push({
-          type: 'html',
-          position,
-          target,
-          content: htmlContent
-        });
-      } else {
-        // Section-style HTML content
-        result.html = htmlContent;
-      }
+      result.modifications.push({
+        type: 'html',
+        position,
+        target: htmlMatch[2],
+        content: htmlMatch[3].trim()
+      });
     }
 
     // Parse remove blocks
@@ -332,6 +298,64 @@ const EXW3Utils = {
       });
     }
 
+    // Parse init blocks (multiple allowed)
+    const initRegex = /^init\s*\{([\s\S]*?)\n^\}/gm;
+    let initMatch;
+    while ((initMatch = initRegex.exec(content)) !== null) {
+      result.inits.push(initMatch[1].trim());
+    }
+
+    // Back-compat: expose first init as result.init
+    result.init = result.inits[0] || null;
+
+    return result;
+  },
+
+  /**
+   * Parse .exws3 section files
+   */
+  parseExws3(content) {
+    content = content.replace(/\r/g, '');
+    const result = {
+      name: '',
+      type: 'section',
+      version: '1.0.0',
+      description: '',
+      dependencies: [],
+      html: '',
+      css: '',
+      javascript: '',
+      init: null,
+      render: null
+    };
+
+    // Extract metadata
+    const nameMatch = content.match(/@name\s+"([^"]+)"/);
+    const versionMatch = content.match(/@version\s+"([^"]+)"/);
+    const descMatch = content.match(/@description\s+"([^"]+)"/);
+    const depsMatch = content.match(/@dependencies\s*\[([^\]]*)\]/);
+
+    if (nameMatch) result.name = nameMatch[1];
+    if (versionMatch) result.version = versionMatch[1];
+    if (descMatch) result.description = descMatch[1];
+    if (depsMatch && depsMatch[1]) {
+      result.dependencies = depsMatch[1].split(',').map(s => s.trim().replace(/['"]/g, ''));
+    }
+
+    // Parse HTML block
+    const htmlRegex = /^html\s*\{([\s\S]*?)\n^\}/m;
+    const htmlMatch = htmlRegex.exec(content);
+    if (htmlMatch) {
+      result.html = htmlMatch[1].trim();
+    }
+
+    // Parse CSS block
+    const cssRegex = /^css\s*\{([\s\S]*?)\n^\}/m;
+    const cssMatch = cssRegex.exec(content);
+    if (cssMatch) {
+      result.css = cssMatch[1].trim();
+    }
+
     // Parse JavaScript block
     const jsRegex = /^javascript\s*\{([\s\S]*?)\n^\}/m;
     const jsMatch = jsRegex.exec(content);
@@ -339,13 +363,12 @@ const EXW3Utils = {
       result.javascript = jsMatch[1].trim();
     }
 
-    // Parse init blocks (multiple allowed for layer-style)
-    const initRegex = /^init\s*\{([\s\S]*?)\n^\}/gm;
-    let initMatch;
-    while ((initMatch = initRegex.exec(content)) !== null) {
-      result.inits.push(initMatch[1].trim());
+    // Parse init block
+    const initRegex = /^init\s*\{([\s\S]*?)\n^\}/m;
+    const initMatch = initRegex.exec(content);
+    if (initMatch) {
+      result.init = initMatch[1].trim();
     }
-    result.init = result.inits[0] || null;
 
     // Parse render block
     const renderRegex = /^render\s*\{([\s\S]*?)\n^\}/m;
@@ -354,371 +377,7 @@ const EXW3Utils = {
       result.render = renderMatch[1].trim();
     }
 
-    // Parse lifecycle blocks
-    const lifecycleRegex = /^(onLoad|onUnload|onActivate|onDeactivate|onMount|onUnmount|onUpdate|onDestroy)\s*\{([\s\S]*?)\n^\}/gm;
-    let lifecycleMatch;
-    while ((lifecycleMatch = lifecycleRegex.exec(content)) !== null) {
-      result.lifecycle[lifecycleMatch[1]] = lifecycleMatch[2].trim();
-    }
-
-    // Parse watch blocks for DOM watching (layer-style)
-    const domWatchRegex = /^watch\s+([^\s{]+)\s*\{([\s\S]*?)\n^\}/gm;
-    let domWatchMatch;
-    while ((domWatchMatch = domWatchRegex.exec(content)) !== null) {
-      const selector = domWatchMatch[1].trim();
-      if (selector.startsWith('#') || selector.startsWith('.')) {
-        // DOM selector watch
-        result.watchers.push({
-          selector,
-          handler: domWatchMatch[2].trim()
-        });
-      } else {
-        // State watch (section-style)
-        result.sectionWatchers[selector] = domWatchMatch[2].trim();
-      }
-    }
-
-    // Parse middleware blocks
-    const middlewareRegex = /^middleware\s+"([^"]+)"\s*\{([\s\S]*?)\n^\}/gm;
-    let middlewareMatch;
-    while ((middlewareMatch = middlewareRegex.exec(content)) !== null) {
-      result.middleware.push({
-        name: middlewareMatch[1],
-        handler: middlewareMatch[2].trim()
-      });
-    }
-
-    // Parse validator blocks
-    const validatorRegex = /^validator\s+"([^"]+)"\s*\{([\s\S]*?)\n^\}/gm;
-    let validatorMatch;
-    while ((validatorMatch = validatorRegex.exec(content)) !== null) {
-      result.validators[validatorMatch[1]] = validatorMatch[2].trim();
-    }
-
-    // Parse transformer blocks
-    const transformerRegex = /^transformer\s+"([^"]+)"\s*\{([\s\S]*?)\n^\}/gm;
-    let transformerMatch;
-    while ((transformerMatch = transformerRegex.exec(content)) !== null) {
-      result.transformers[transformerMatch[1]] = transformerMatch[2].trim();
-    }
-
-    // Parse i18n blocks
-    const i18nRegex = /^i18n\s+"([^"]+)"\s*\{([\s\S]*?)\n^\}/gm;
-    let i18nMatch;
-    while ((i18nMatch = i18nRegex.exec(content)) !== null) {
-      try {
-        result.i18n[i18nMatch[1]] = JSON.parse('{' + i18nMatch[2].trim() + '}');
-      } catch (e) {
-        console.error(`Failed to parse i18n for locale '${i18nMatch[1]}':`, e);
-      }
-    }
-
-    // Parse computed blocks
-    const computedRegex = /^computed\s+"([^"]+)"\s*\{([\s\S]*?)\n^\}/gm;
-    let computedMatch;
-    while ((computedMatch = computedRegex.exec(content)) !== null) {
-      result.computed[computedMatch[1]] = computedMatch[2].trim();
-    }
-
-    // Parse method blocks
-    const methodRegex = /^method\s+"([^"]+)"\s*\{([\s\S]*?)\n^\}/gm;
-    let methodMatch;
-    while ((methodMatch = methodRegex.exec(content)) !== null) {
-      result.methods[methodMatch[1]] = methodMatch[2].trim();
-    }
-
-    // Parse props block
-    const propsRegex = /^props\s*\{([\s\S]*?)\n^\}/m;
-    const propsMatch = propsRegex.exec(content);
-    if (propsMatch) {
-      try {
-        result.props = JSON.parse('{' + propsMatch[1].trim() + '}');
-      } catch (e) {
-        console.error('Failed to parse props:', e);
-      }
-    }
-
-    // Parse state block
-    const stateRegex = /^state\s*\{([\s\S]*?)\n^\}/m;
-    const stateMatch = stateRegex.exec(content);
-    if (stateMatch) {
-      try {
-        result.state = JSON.parse('{' + stateMatch[1].trim() + '}');
-      } catch (e) {
-        console.error('Failed to parse state:', e);
-      }
-    }
-
     return result;
-  },
-
-  /**
-   * Parse .exwl3 layer files
-   */
-  parseExwl3(content) {
-    // Use unified parser and mark as layer
-    const result = this.parseEx3(content);
-    result.type = 'layer';
-    return result;
-  },
-
-  /**
-   * Parse .exws3 section files
-   */
-  parseExws3(content) {
-    // Use unified parser and mark as section
-    const result = this.parseEx3(content);
-    result.type = 'section';
-    return result;
-  },
-
-  /**
-   * Create a unified mod from .ex3 definition (can be both layer and section)
-   */
-  createUnifiedModFromEx3(ex3Data, name) {
-    const sectionState = ex3Data.state || {};
-    const sectionMethods = {};
-    const sectionComputed = {};
-
-    // Create methods
-    if (ex3Data.methods) {
-      for (const [methodName, code] of Object.entries(ex3Data.methods)) {
-        try {
-          sectionMethods[methodName] = new Function('kernel', code);
-        } catch (error) {
-          console.error(`Error creating method '${methodName}':`, error);
-        }
-      }
-    }
-
-    // Create computed properties
-    if (ex3Data.computed) {
-      for (const [propName, code] of Object.entries(ex3Data.computed)) {
-        try {
-          sectionComputed[propName] = new Function('kernel', code);
-        } catch (error) {
-          console.error(`Error creating computed '${propName}':`, error);
-        }
-      }
-    }
-
-    return {
-      name: ex3Data.name || name,
-      description: ex3Data.description || '',
-      author: ex3Data.author || '',
-      version: ex3Data.version || '1.0.0',
-      priority: ex3Data.priority ?? 10,
-      disabled: ex3Data.disabled || false,
-      modifies: ex3Data.modifies || [],
-      dependencies: ex3Data.dependencies || [],
-      type: ex3Data.type || 'both',
-      state: sectionState,
-      methods: sectionMethods,
-      computed: sectionComputed,
-
-      // Layer functionality
-      onApply(kernel) {
-        if (this.disabled) {
-          console.log(`⊘ Mod '${this.name}' is disabled, skipping`);
-          return;
-        }
-
-        // Execute lifecycle: onLoad
-        if (ex3Data.lifecycle.onLoad) {
-          try {
-            const fn = new Function('kernel', ex3Data.lifecycle.onLoad);
-            fn(kernel);
-          } catch (error) {
-            console.error(`Error in mod '${this.name}' onLoad:`, error);
-          }
-        }
-
-        // Execute modifications (layer features)
-        if (ex3Data.modifications) {
-          ex3Data.modifications.forEach(mod => {
-            if (mod.type === 'css') {
-              EXW3Utils.injectCSS(mod.content);
-            } else if (mod.type === 'html') {
-              EXW3Utils.injectHTML(mod.target, mod.content, mod.position);
-            } else if (mod.type === 'remove') {
-              EXW3Utils.removeElement(mod.target);
-            }
-          });
-        }
-
-        // Register validators
-        if (ex3Data.validators) {
-          for (const [name, code] of Object.entries(ex3Data.validators)) {
-            try {
-              const fn = new Function('value', 'params', 'data', code);
-              kernel.registerValidator(name, fn);
-            } catch (error) {
-              console.error(`Error registering validator '${name}':`, error);
-            }
-          }
-        }
-
-        // Register transformers
-        if (ex3Data.transformers) {
-          for (const [name, code] of Object.entries(ex3Data.transformers)) {
-            try {
-              const fn = new Function('data', '...args', code);
-              kernel.registerTransformer(name, fn);
-            } catch (error) {
-              console.error(`Error registering transformer '${name}':`, error);
-            }
-          }
-        }
-
-        // Register middleware
-        if (ex3Data.middleware) {
-          ex3Data.middleware.forEach(mw => {
-            try {
-              const fn = new Function('context', 'data', 'kernel', mw.handler);
-              kernel.registerMiddleware(mw.name, fn);
-            } catch (error) {
-              console.error(`Error registering middleware '${mw.name}':`, error);
-            }
-          });
-        }
-
-        // Add i18n translations
-        if (ex3Data.i18n) {
-          for (const [locale, messages] of Object.entries(ex3Data.i18n)) {
-            kernel.i18n.addTranslations(locale, messages);
-          }
-        }
-
-        // Setup DOM watchers
-        if (ex3Data.watchers) {
-          ex3Data.watchers.forEach(watcher => {
-            try {
-              const fn = new Function('mutations', 'element', 'kernel', watcher.handler);
-              kernel.watchElement(watcher.selector, (mutations, element) => {
-                fn(mutations, element, kernel);
-              });
-            } catch (error) {
-              console.error(`Error setting up watcher for '${watcher.selector}':`, error);
-            }
-          });
-        }
-
-        // Execute all init blocks in order
-        const inits = ex3Data.inits && ex3Data.inits.length
-          ? ex3Data.inits
-          : (ex3Data.init ? [ex3Data.init] : []);
-
-        for (const initCode of inits) {
-          try {
-            const fn = new Function('kernel', initCode);
-            fn(kernel);
-          } catch (error) {
-            console.error(`Error in mod '${this.name}' init:`, error);
-            const errEl = document.createElement('div');
-            errEl.style.cssText = 'background:#fee;border:1px solid #f99;padding:10px;margin:10px;border-radius:4px;font-family:monospace;font-size:13px;color:#900;position:fixed;bottom:10px;right:10px;z-index:9999;max-width:400px;';
-            errEl.textContent = '[mod:' + this.name + '] ' + error.message;
-            document.body.appendChild(errEl);
-          }
-        }
-
-        // Execute lifecycle: onActivate
-        if (ex3Data.lifecycle.onActivate) {
-          try {
-            const fn = new Function('kernel', ex3Data.lifecycle.onActivate);
-            fn(kernel);
-          } catch (error) {
-            console.error(`Error in mod '${this.name}' onActivate:`, error);
-          }
-        }
-      },
-
-      // Section functionality
-      async init(kernel) {
-        // Execute lifecycle: onMount
-        if (ex3Data.lifecycle.onMount) {
-          try {
-            const fn = new Function('kernel', ex3Data.lifecycle.onMount);
-            fn(kernel);
-          } catch (error) {
-            console.error('Error in mod ' + this.name + ' onMount:', error);
-          }
-        }
-      },
-
-      async render(container, kernel) {
-        // Set HTML first so DOM elements exist before scripts run
-        if (ex3Data.render) {
-          try {
-            const fn = new Function('container', 'kernel', ex3Data.render);
-            fn(container, kernel);
-          } catch (error) {
-            console.error('Error rendering mod ' + this.name + ':', error);
-          }
-        } else if (ex3Data.html) {
-          container.innerHTML = ex3Data.html;
-        }
-
-        // Inject CSS into head
-        if (ex3Data.css) {
-          const existingStyle = document.getElementById(`style-section-${this.name}`);
-          if (!existingStyle) {
-            EXW3Utils.injectCSS(ex3Data.css, `style-section-${this.name}`);
-          }
-        }
-
-        // Setup state watchers
-        if (ex3Data.sectionWatchers) {
-          for (const [key, code] of Object.entries(ex3Data.sectionWatchers)) {
-            try {
-              const fn = new Function('newValue', 'oldValue', 'kernel', code);
-              kernel.watchState(key, (data) => {
-                fn(data.value, data.oldValue, kernel);
-              });
-            } catch (error) {
-              console.error(`Error setting up watcher for '${key}':`, error);
-            }
-          }
-        }
-
-        // Expose methods and computed to section context
-        const sectionContext = {
-          state: this.state,
-          methods: this.methods,
-          computed: this.computed,
-          $el: container
-        };
-
-        // Make methods callable with kernel context
-        for (const [methodName, method] of Object.entries(this.methods)) {
-          sectionContext[methodName] = () => method.call(sectionContext, kernel);
-        }
-
-        // Run javascript + init together in one scope
-        const jsCode = (ex3Data.javascript || '') + '\n' + (ex3Data.init || '');
-        if (jsCode.trim()) {
-          try {
-            const fn = new Function('kernel', 'context', jsCode);
-            fn(kernel, sectionContext);
-          } catch (error) {
-            console.error('Error in mod ' + this.name + ' script:', error);
-            const errEl = document.createElement('div');
-            errEl.style.cssText = 'background:#fee;border:1px solid #f99;padding:10px;margin:10px;border-radius:4px;font-family:monospace;font-size:13px;color:#900;';
-            errEl.textContent = '[' + this.name + '] ' + error.message;
-            container.appendChild(errEl);
-          }
-        }
-
-        // Execute lifecycle: onUpdate
-        if (ex3Data.lifecycle.onUpdate) {
-          try {
-            const fn = new Function('kernel', 'context', ex3Data.lifecycle.onUpdate);
-            fn(kernel, sectionContext);
-          } catch (error) {
-            console.error('Error in mod ' + this.name + ' onUpdate:', error);
-          }
-        }
-      }
-    };
   },
 
   /**
@@ -741,16 +400,6 @@ const EXW3Utils = {
           return;
         }
 
-        // Execute lifecycle: onLoad
-        if (exwl3Data.lifecycle.onLoad) {
-          try {
-            const fn = new Function('kernel', exwl3Data.lifecycle.onLoad);
-            fn(kernel);
-          } catch (error) {
-            console.error(`Error in layer '${this.name}' onLoad:`, error);
-          }
-        }
-
         // Execute modifications
         if (exwl3Data.modifications) {
           exwl3Data.modifications.forEach(mod => {
@@ -760,63 +409,6 @@ const EXW3Utils = {
               EXW3Utils.injectHTML(mod.target, mod.content, mod.position);
             } else if (mod.type === 'remove') {
               EXW3Utils.removeElement(mod.target);
-            }
-          });
-        }
-
-        // Register validators
-        if (exwl3Data.validators) {
-          for (const [name, code] of Object.entries(exwl3Data.validators)) {
-            try {
-              const fn = new Function('value', 'params', 'data', code);
-              kernel.registerValidator(name, fn);
-            } catch (error) {
-              console.error(`Error registering validator '${name}':`, error);
-            }
-          }
-        }
-
-        // Register transformers
-        if (exwl3Data.transformers) {
-          for (const [name, code] of Object.entries(exwl3Data.transformers)) {
-            try {
-              const fn = new Function('data', '...args', code);
-              kernel.registerTransformer(name, fn);
-            } catch (error) {
-              console.error(`Error registering transformer '${name}':`, error);
-            }
-          }
-        }
-
-        // Register middleware
-        if (exwl3Data.middleware) {
-          exwl3Data.middleware.forEach(mw => {
-            try {
-              const fn = new Function('context', 'data', 'kernel', mw.handler);
-              kernel.registerMiddleware(mw.name, fn);
-            } catch (error) {
-              console.error(`Error registering middleware '${mw.name}':`, error);
-            }
-          });
-        }
-
-        // Add i18n translations
-        if (exwl3Data.i18n) {
-          for (const [locale, messages] of Object.entries(exwl3Data.i18n)) {
-            kernel.i18n.addTranslations(locale, messages);
-          }
-        }
-
-        // Setup DOM watchers
-        if (exwl3Data.watchers) {
-          exwl3Data.watchers.forEach(watcher => {
-            try {
-              const fn = new Function('mutations', 'element', 'kernel', watcher.handler);
-              kernel.watchElement(watcher.selector, (mutations, element) => {
-                fn(mutations, element, kernel);
-              });
-            } catch (error) {
-              console.error(`Error setting up watcher for '${watcher.selector}':`, error);
             }
           });
         }
@@ -839,16 +431,6 @@ const EXW3Utils = {
             document.body.appendChild(errEl);
           }
         }
-
-        // Execute lifecycle: onActivate
-        if (exwl3Data.lifecycle.onActivate) {
-          try {
-            const fn = new Function('kernel', exwl3Data.lifecycle.onActivate);
-            fn(kernel);
-          } catch (error) {
-            console.error(`Error in layer '${this.name}' onActivate:`, error);
-          }
-        }
       }
     };
   },
@@ -857,53 +439,14 @@ const EXW3Utils = {
    * Create a section from .exws3 definition
    */
   createSectionFromExws3(exws3Data, name) {
-    const sectionState = exws3Data.state || {};
-    const sectionMethods = {};
-    const sectionComputed = {};
-
-    // Create methods
-    if (exws3Data.methods) {
-      for (const [methodName, code] of Object.entries(exws3Data.methods)) {
-        try {
-          sectionMethods[methodName] = new Function('kernel', code);
-        } catch (error) {
-          console.error(`Error creating method '${methodName}':`, error);
-        }
-      }
-    }
-
-    // Create computed properties
-    if (exws3Data.computed) {
-      for (const [propName, code] of Object.entries(exws3Data.computed)) {
-        try {
-          sectionComputed[propName] = new Function('kernel', code);
-        } catch (error) {
-          console.error(`Error creating computed '${propName}':`, error);
-        }
-      }
-    }
-
     return {
       name: exws3Data.name || name,
       description: exws3Data.description || '',
       version: exws3Data.version || '1.0.0',
       dependencies: exws3Data.dependencies || [],
-      state: sectionState,
-      methods: sectionMethods,
-      computed: sectionComputed,
 
       async init(kernel) {
         // CSS is injected during render to avoid id conflicts with section container
-        
-        // Execute lifecycle: onMount
-        if (exws3Data.lifecycle.onMount) {
-          try {
-            const fn = new Function('kernel', exws3Data.lifecycle.onMount);
-            fn(kernel);
-          } catch (error) {
-            console.error('Error in section ' + this.name + ' onMount:', error);
-          }
-        }
       },
 
       async render(container, kernel) {
@@ -928,40 +471,13 @@ const EXW3Utils = {
           }
         }
 
-        // Setup watchers
-        if (exws3Data.watchers) {
-          for (const [key, code] of Object.entries(exws3Data.watchers)) {
-            try {
-              const fn = new Function('newValue', 'oldValue', 'kernel', code);
-              kernel.watchState(key, (data) => {
-                fn(data.value, data.oldValue, kernel);
-              });
-            } catch (error) {
-              console.error(`Error setting up watcher for '${key}':`, error);
-            }
-          }
-        }
-
-        // Expose methods and computed to section context
-        const sectionContext = {
-          state: this.state,
-          methods: this.methods,
-          computed: this.computed,
-          $el: container
-        };
-
-        // Make methods callable with kernel context
-        for (const [methodName, method] of Object.entries(this.methods)) {
-          sectionContext[methodName] = () => method.call(sectionContext, kernel);
-        }
-
         // Run javascript + init together in one scope so they share variables
         const jsCode = (exws3Data.javascript || '') + '\n' + (exws3Data.init || '');
         if (jsCode.trim()) {
           try {
             // Use Function constructor instead of eval to avoid parsing issues with comments
-            const fn = new Function('kernel', 'context', jsCode);
-            fn(kernel, sectionContext);
+            const fn = new Function('kernel', jsCode);
+            fn(kernel);
           } catch (error) {
             console.error('Error in section ' + this.name + ' script:', error);
             const errEl = document.createElement('div');
@@ -970,22 +486,12 @@ const EXW3Utils = {
             container.appendChild(errEl);
           }
         }
-
-        // Execute lifecycle: onUpdate
-        if (exws3Data.lifecycle.onUpdate) {
-          try {
-            const fn = new Function('kernel', 'context', exws3Data.lifecycle.onUpdate);
-            fn(kernel, sectionContext);
-          } catch (error) {
-            console.error('Error in section ' + this.name + ' onUpdate:', error);
-          }
-        }
       }
     };
   },
 
   /**
-   * Load an .exwl3 or .exws3 or .ex3 file from URL or path
+   * Load an .exwl3 or .exws3 file from URL or path
    */
   async loadModFile(url) {
     try {
@@ -993,32 +499,15 @@ const EXW3Utils = {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const content = await response.text();
       
-      if (url.endsWith('.ex3')) {
-        return this.parseEx3(content);
-      } else if (url.endsWith('.exwl3')) {
+      if (url.endsWith('.exwl3')) {
         return this.parseExwl3(content);
       } else if (url.endsWith('.exws3')) {
         return this.parseExws3(content);
       } else {
-        throw new Error('Unsupported file format. Use .ex3, .exwl3, or .exws3');
+        throw new Error('Unsupported file format. Use .exwl3 or .exws3');
       }
     } catch (error) {
       console.error(`Failed to load mod file from ${url}:`, error);
-      return null;
-    }
-  },
-
-  /**
-   * Load an .ex3 file specifically
-   */
-  async loadEx3File(url) {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const content = await response.text();
-      return this.parseEx3(content);
-    } catch (error) {
-      console.error(`Failed to load .ex3 file from ${url}:`, error);
       return null;
     }
   },
@@ -1159,6 +648,646 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 
+// ========== ENHANCED .EX3 FEATURES ==========
+
+/**
+ * Parse template expressions in HTML
+ * Supports: {{variable}}, {{expression}}, @if, @for, @bind
+ */
+EXW3Utils.parseTemplate = function(html, data = {}) {
+  let result = html;
+
+  // Replace {{expressions}}
+  result = result.replace(/\{\{(.+?)\}\}/g, (match, expr) => {
+    try {
+      const fn = new Function(...Object.keys(data), `return ${expr}`);
+      return fn(...Object.values(data));
+    } catch (e) {
+      console.warn(`Template expression error: ${expr}`, e);
+      return match;
+    }
+  });
+
+  // Handle @if directives
+  result = result.replace(/@if\((.+?)\)\s*\{([\s\S]*?)\}/g, (match, condition, content) => {
+    try {
+      const fn = new Function(...Object.keys(data), `return ${condition}`);
+      return fn(...Object.values(data)) ? content : '';
+    } catch (e) {
+      console.warn(`@if directive error: ${condition}`, e);
+      return '';
+    }
+  });
+
+  // Handle @for directives
+  result = result.replace(/@for\((.+?)\sin\s(.+?)\)\s*\{([\s\S]*?)\}/g, (match, item, array, template) => {
+    try {
+      const fn = new Function(...Object.keys(data), `return ${array}`);
+      const items = fn(...Object.values(data));
+      
+      if (!Array.isArray(items)) return '';
+      
+      return items.map((itemData, index) => {
+        return EXW3Utils.parseTemplate(template, {
+          ...data,
+          [item]: itemData,
+          index,
+          first: index === 0,
+          last: index === items.length - 1
+        });
+      }).join('');
+    } catch (e) {
+      console.warn(`@for directive error: ${item} in ${array}`, e);
+      return '';
+    }
+  });
+
+  return result;
+};
+
+/**
+ * Create reactive data binding
+ */
+EXW3Utils.createReactive = function(data, onChange) {
+  return new Proxy(data, {
+    set(target, property, value) {
+      const oldValue = target[property];
+      target[property] = value;
+      if (onChange && oldValue !== value) {
+        onChange(property, value, oldValue);
+      }
+      return true;
+    },
+    get(target, property) {
+      if (typeof target[property] === 'object' && target[property] !== null) {
+        return EXW3Utils.createReactive(target[property], onChange);
+      }
+      return target[property];
+    }
+  });
+};
+
+/**
+ * Parse computed styles with expressions
+ */
+EXW3Utils.parseComputedStyles = function(css, data = {}) {
+  return css.replace(/\$\{(.+?)\}/g, (match, expr) => {
+    try {
+      const fn = new Function(...Object.keys(data), `return ${expr}`);
+      return fn(...Object.values(data));
+    } catch (e) {
+      console.warn(`Computed style error: ${expr}`, e);
+      return match;
+    }
+  });
+};
+
+/**
+ * Enhanced mod creation with new features
+ */
+EXW3Utils.createEnhancedMod = function(modData, modName) {
+  const mod = {
+    name: modData.name || modName,
+    version: modData.version || '1.0.0',
+    description: modData.description || '',
+    type: modData.type || 'both',
+    dependencies: modData.dependencies || [],
+    
+    // Reactive state
+    state: modData.state ? EXW3Utils.createReactive(modData.state, (key, value) => {
+      if (mod.onStateChange) {
+        mod.onStateChange(key, value);
+      }
+      if (mod._updateCallbacks) {
+        mod._updateCallbacks.forEach(cb => cb());
+      }
+    }) : {},
+
+    // Computed properties
+    computed: {},
+
+    // Watchers
+    _watchers: new Map(),
+
+    // Update callbacks
+    _updateCallbacks: [],
+
+    // Lifecycle hooks
+    onCreate: modData.onCreate || (() => {}),
+    onMount: modData.onMount || (() => {}),
+    onUpdate: modData.onUpdate || (() => {}),
+    onDestroy: modData.onDestroy || (() => {}),
+    onStateChange: modData.onStateChange || null,
+
+    // Methods
+    methods: modData.methods || {},
+
+    // Watch state changes
+    watch(key, callback) {
+      if (!this._watchers.has(key)) {
+        this._watchers.set(key, []);
+      }
+      this._watchers.get(key).push(callback);
+    },
+
+    // Trigger update
+    update() {
+      this._updateCallbacks.forEach(cb => cb());
+    },
+
+    // Register update callback
+    onUpdate(callback) {
+      this._updateCallbacks.push(callback);
+    }
+  };
+
+  // Setup computed properties
+  if (modData.computed) {
+    for (const [key, fn] of Object.entries(modData.computed)) {
+      Object.defineProperty(mod.computed, key, {
+        get() {
+          return fn.call(mod, mod.state);
+        }
+      });
+    }
+  }
+
+  // Layer-specific
+  if (modData.type === 'layer' || modData.type === 'both') {
+    mod.css = modData.css || '';
+    mod.html = modData.html || '';
+    
+    mod.onApply = function(kernel) {
+      // Inject CSS
+      if (this.css) {
+        const style = document.createElement('style');
+        style.id = `layer-${this.name}`;
+        style.textContent = EXW3Utils.parseComputedStyles(this.css, this.state);
+        document.head.appendChild(style);
+      }
+
+      // Inject HTML
+      if (this.html) {
+        const parsed = EXW3Utils.parseTemplate(this.html, {
+          ...this.state,
+          ...this.computed
+        });
+        
+        const container = document.createElement('div');
+        container.innerHTML = parsed;
+        container.className = `layer-${this.name}`;
+        document.body.appendChild(container);
+      }
+
+      // Run init
+      if (modData.init) {
+        modData.init.call(this, kernel);
+      }
+
+      this.onCreate();
+      this.onMount();
+    };
+  }
+
+  // Section-specific
+  if (modData.type === 'section' || modData.type === 'both') {
+    mod.render = async function(container, kernel) {
+      // Inject CSS
+      if (this.css && !document.getElementById(`section-${this.name}-style`)) {
+        const style = document.createElement('style');
+        style.id = `section-${this.name}-style`;
+        style.textContent = EXW3Utils.parseComputedStyles(this.css, this.state);
+        document.head.appendChild(style);
+      }
+
+      // Render HTML
+      if (this.html) {
+        const parsed = EXW3Utils.parseTemplate(this.html, {
+          ...this.state,
+          ...this.computed
+        });
+        container.innerHTML = parsed;
+
+        // Setup event listeners from @on directives
+        this._setupEventListeners(container);
+      }
+
+      // Run custom render
+      if (modData.render) {
+        await modData.render.call(this, container, kernel);
+      }
+
+      // Run init
+      if (modData.init) {
+        await modData.init.call(this, kernel);
+      }
+
+      this.onCreate();
+      this.onMount();
+
+      // Setup auto-update on state change
+      this.onUpdate(() => {
+        if (container && this.html) {
+          const parsed = EXW3Utils.parseTemplate(this.html, {
+            ...this.state,
+            ...this.computed
+          });
+          container.innerHTML = parsed;
+          this._setupEventListeners(container);
+        }
+      });
+    };
+
+    mod._setupEventListeners = function(container) {
+      // Find elements with @on:event="method" attributes
+      const elements = container.querySelectorAll('[data-on]');
+      elements.forEach(el => {
+        const events = el.dataset.on.split(';');
+        events.forEach(eventDef => {
+          const [event, method] = eventDef.split(':');
+          if (this.methods[method]) {
+            el.addEventListener(event, (e) => {
+              this.methods[method].call(this, e, this.state);
+            });
+          }
+        });
+      });
+    };
+
+    mod.init = async function(kernel) {
+      // Inject global CSS
+      if (this.css && !document.getElementById(`section-${this.name}-global-style`)) {
+        const style = document.createElement('style');
+        style.id = `section-${this.name}-global-style`;
+        style.textContent = this.css;
+        document.head.appendChild(style);
+      }
+
+      // Run global init
+      if (modData.init) {
+        await modData.init.call(this, kernel);
+      }
+    };
+  }
+
+  return mod;
+};
+
+/**
+ * Parse enhanced .ex3 format with new features
+ */
+EXW3Utils.parseEnhancedEx3 = function(content) {
+  const result = {
+    metadata: {},
+    css: '',
+    html: '',
+    script: '',
+    state: {},
+    computed: {},
+    methods: {},
+    watchers: {},
+    lifecycle: {}
+  };
+
+  // Parse metadata
+  const metaPattern = /@(\w+)\s+(.+)/g;
+  let match;
+  while ((match = metaPattern.exec(content)) !== null) {
+    result.metadata[match[1]] = match[2].replace(/^["']|["']$/g, '');
+  }
+
+  // Parse blocks
+  const blockPattern = /(\w+)\s*\{([\s\S]*?)\n\}/g;
+  while ((match = blockPattern.exec(content)) !== null) {
+    const blockName = match[1];
+    const blockContent = match[2].trim();
+
+    switch (blockName) {
+      case 'css':
+        result.css = blockContent;
+        break;
+      case 'html':
+        result.html = blockContent;
+        break;
+      case 'script':
+      case 'init':
+        result.script = blockContent;
+        break;
+      case 'state':
+        try {
+          result.state = eval(`(${blockContent})`);
+        } catch (e) {
+          console.warn('Failed to parse state block:', e);
+        }
+        break;
+      case 'computed':
+        try {
+          result.computed = eval(`(${blockContent})`);
+        } catch (e) {
+          console.warn('Failed to parse computed block:', e);
+        }
+        break;
+      case 'methods':
+        try {
+          result.methods = eval(`(${blockContent})`);
+        } catch (e) {
+          console.warn('Failed to parse methods block:', e);
+        }
+        break;
+      case 'watch':
+        try {
+          result.watchers = eval(`(${blockContent})`);
+        } catch (e) {
+          console.warn('Failed to parse watch block:', e);
+        }
+        break;
+      case 'onCreate':
+      case 'onMount':
+      case 'onUpdate':
+      case 'onDestroy':
+        try {
+          result.lifecycle[blockName] = eval(`(${blockContent})`);
+        } catch (e) {
+          console.warn(`Failed to parse ${blockName} block:`, e);
+        }
+        break;
+    }
+  }
+
+  return result;
+};
+
+// ========== WEBSOCKET UTILITIES ==========
+
+EXW3Utils.createWebSocket = function(url, options = {}) {
+  const {
+    onOpen = () => {},
+    onMessage = () => {},
+    onError = () => {},
+    onClose = () => {},
+    reconnect = true,
+    reconnectDelay = 3000,
+    maxReconnectAttempts = 5
+  } = options;
+
+  let ws = null;
+  let reconnectAttempts = 0;
+  let reconnectTimeout = null;
+
+  const connect = () => {
+    ws = new WebSocket(url);
+
+    ws.onopen = (event) => {
+      console.log('WebSocket connected');
+      reconnectAttempts = 0;
+      onOpen(event);
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        onMessage(data, event);
+      } catch (e) {
+        onMessage(event.data, event);
+      }
+    };
+
+    ws.onerror = (event) => {
+      console.error('WebSocket error:', event);
+      onError(event);
+    };
+
+    ws.onclose = (event) => {
+      console.log('WebSocket closed');
+      onClose(event);
+
+      if (reconnect && reconnectAttempts < maxReconnectAttempts) {
+        reconnectAttempts++;
+        console.log(`Reconnecting... (${reconnectAttempts}/${maxReconnectAttempts})`);
+        reconnectTimeout = setTimeout(connect, reconnectDelay);
+      }
+    };
+  };
+
+  connect();
+
+  return {
+    send(data) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(typeof data === 'string' ? data : JSON.stringify(data));
+      } else {
+        console.warn('WebSocket not connected');
+      }
+    },
+    close() {
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      if (ws) {
+        ws.close();
+      }
+    },
+    get readyState() {
+      return ws ? ws.readyState : WebSocket.CLOSED;
+    }
+  };
+};
+
+// ========== INDEXEDDB WRAPPER ==========
+
+EXW3Utils.createDB = function(dbName, version = 1) {
+  let db = null;
+
+  const open = () => {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(dbName, version);
+
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        db = request.result;
+        resolve(db);
+      };
+
+      request.onupgradeneeded = (event) => {
+        db = event.target.result;
+        if (!db.objectStoreNames.contains('data')) {
+          db.createObjectStore('data', { keyPath: 'id', autoIncrement: true });
+        }
+      };
+    });
+  };
+
+  return {
+    async get(storeName, key) {
+      if (!db) await open();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([storeName], 'readonly');
+        const store = transaction.objectStore(storeName);
+        const request = store.get(key);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    },
+
+    async set(storeName, value) {
+      if (!db) await open();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([storeName], 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.put(value);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    },
+
+    async delete(storeName, key) {
+      if (!db) await open();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([storeName], 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.delete(key);
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    },
+
+    async getAll(storeName) {
+      if (!db) await open();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([storeName], 'readonly');
+        const store = transaction.objectStore(storeName);
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    },
+
+    async clear(storeName) {
+      if (!db) await open();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([storeName], 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    }
+  };
+};
+
+// ========== DRAG AND DROP UTILITIES ==========
+
+EXW3Utils.makeDraggable = function(element, options = {}) {
+  const {
+    handle = element,
+    onDragStart = () => {},
+    onDrag = () => {},
+    onDragEnd = () => {},
+    containment = null
+  } = options;
+
+  let isDragging = false;
+  let startX, startY, initialX, initialY;
+
+  handle.style.cursor = 'move';
+
+  handle.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    
+    const rect = element.getBoundingClientRect();
+    initialX = rect.left;
+    initialY = rect.top;
+
+    element.style.position = 'fixed';
+    element.style.zIndex = '9999';
+
+    onDragStart(e);
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+
+    let newX = initialX + deltaX;
+    let newY = initialY + deltaY;
+
+    if (containment) {
+      const bounds = containment.getBoundingClientRect();
+      const elRect = element.getBoundingClientRect();
+      newX = Math.max(bounds.left, Math.min(newX, bounds.right - elRect.width));
+      newY = Math.max(bounds.top, Math.min(newY, bounds.bottom - elRect.height));
+    }
+
+    element.style.left = newX + 'px';
+    element.style.top = newY + 'px';
+
+    onDrag(e, { x: newX, y: newY });
+  });
+
+  document.addEventListener('mouseup', (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    onDragEnd(e);
+  });
+};
+
+// ========== KEYBOARD SHORTCUTS ==========
+
+EXW3Utils.shortcuts = {
+  _bindings: new Map(),
+
+  /**
+   * Register keyboard shortcut
+   */
+  register(keys, callback, options = {}) {
+    const { preventDefault = true, stopPropagation = false } = options;
+    const id = keys.toLowerCase();
+    
+    this._bindings.set(id, { keys, callback, preventDefault, stopPropagation });
+
+    if (this._bindings.size === 1) {
+      this._setupListener();
+    }
+
+    return () => this.unregister(keys);
+  },
+
+  /**
+   * Unregister shortcut
+   */
+  unregister(keys) {
+    this._bindings.delete(keys.toLowerCase());
+  },
+
+  /**
+   * Setup global listener
+   */
+  _setupListener() {
+    document.addEventListener('keydown', (e) => {
+      const keys = [];
+      if (e.ctrlKey) keys.push('ctrl');
+      if (e.altKey) keys.push('alt');
+      if (e.shiftKey) keys.push('shift');
+      if (e.metaKey) keys.push('meta');
+      keys.push(e.key.toLowerCase());
+
+      const combo = keys.join('+');
+      const binding = this._bindings.get(combo);
+
+      if (binding) {
+        if (binding.preventDefault) e.preventDefault();
+        if (binding.stopPropagation) e.stopPropagation();
+        binding.callback(e);
+      }
+    });
+  }
+};
+
+
           /**
  * EXW3 Kernel Core
  * The foundation for all mods to extend
@@ -1177,16 +1306,6 @@ class EXW3Kernel {
     this.router = this._createRouter(); // Navigation router
     this.theme = this._createThemeAPI(); // Theme management
     this.notifications = []; // Notification queue
-    this.middleware = new Map(); // Middleware system
-    this.plugins = new Map(); // Plugin registry
-    this.watchers = new Map(); // DOM watchers
-    this.animations = this._createAnimationAPI(); // Animation system
-    this.validators = new Map(); // Validation rules
-    this.transformers = new Map(); // Data transformers
-    this.cache = new Map(); // Cache system
-    this.scheduler = this._createScheduler(); // Task scheduler
-    this.i18n = this._createI18nAPI(); // Internationalization
-    this.security = this._createSecurityAPI(); // Security utilities
 
     // Initialize default hooks
     this.registerHook('before-init');
@@ -1198,10 +1317,6 @@ class EXW3Kernel {
     this.registerHook('route-change');
     this.registerHook('state-change');
     this.registerHook('theme-change');
-    this.registerHook('middleware-execute');
-    this.registerHook('plugin-load');
-    this.registerHook('validation-fail');
-    this.registerHook('cache-miss');
   }
 
   /**
@@ -1301,7 +1416,6 @@ class EXW3Kernel {
    */
   async init(configData = {}) {
     this.config = configData;
-    await this._initializeSystems();
     await this.executeHook('before-init');
 
     // Init sections (CSS injection, JS globals, init blocks)
@@ -1332,8 +1446,7 @@ class EXW3Kernel {
     container.innerHTML = '';
     
     // Create section containers in config order
-    // Support both unified 'mods' and legacy 'sections'
-    const sectionOrder = this.config.mods || this.config.sections || [];
+    const sectionOrder = this.config.sections || [];
     for (const name of sectionOrder) {
       const section = this.sections.get(name);
       if (!section) continue;
@@ -1789,573 +1902,818 @@ class EXW3Kernel {
     
     return this.merge(target, ...sources);
   }
+}
 
-  // ========== MIDDLEWARE SYSTEM ==========
+// Export for use
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = EXW3Kernel;
+}
+
+
+  // ========== COMPONENT SYSTEM ==========
+
+  _components = new Map();
+  _componentInstances = new Map();
 
   /**
-   * Register middleware that runs before/after operations
+   * Register a reusable component
    */
-  registerMiddleware(name, handler, options = {}) {
-    this.middleware.set(name, {
-      handler,
-      priority: options.priority || 10,
-      enabled: options.enabled !== false,
-      type: options.type || 'before' // 'before' | 'after' | 'around'
-    });
+  registerComponent(name, definition) {
+    this._components.set(name, definition);
+    console.log(`✓ Component registered: ${name}`);
   }
 
   /**
-   * Execute middleware chain
+   * Create a component instance
    */
-  async executeMiddleware(context, data) {
-    const middlewares = Array.from(this.middleware.values())
-      .filter(m => m.enabled)
-      .sort((a, b) => b.priority - a.priority);
-
-    let result = data;
-    for (const mw of middlewares) {
-      try {
-        result = await mw.handler(context, result, this);
-        await this.executeHook('middleware-execute', { context, middleware: mw });
-      } catch (error) {
-        console.error('Middleware error:', error);
-      }
-    }
-    return result;
-  }
-
-  // ========== PLUGIN SYSTEM ==========
-
-  /**
-   * Register a plugin with lifecycle methods
-   */
-  registerPlugin(name, plugin) {
-    if (this.plugins.has(name)) {
-      console.warn(`Plugin '${name}' already registered`);
-      return;
+  createComponent(name, props = {}, container = null) {
+    const definition = this._components.get(name);
+    if (!definition) {
+      console.error(`Component '${name}' not found`);
+      return null;
     }
 
-    this.plugins.set(name, {
+    const instance = {
       name,
-      install: plugin.install || (() => {}),
-      uninstall: plugin.uninstall || (() => {}),
-      config: plugin.config || {},
-      version: plugin.version || '1.0.0',
-      dependencies: plugin.dependencies || [],
-      installed: false
-    });
+      props,
+      state: {},
+      el: null,
+      mounted: false,
+      _watchers: [],
+      _cleanup: [],
 
-    this.executeHook('plugin-load', { name, plugin });
-  }
+      // Lifecycle methods
+      onCreate: definition.onCreate || (() => {}),
+      onMount: definition.onMount || (() => {}),
+      onUpdate: definition.onUpdate || (() => {}),
+      onDestroy: definition.onDestroy || (() => {}),
 
-  /**
-   * Install a plugin
-   */
-  async installPlugin(name) {
-    const plugin = this.plugins.get(name);
-    if (!plugin) {
-      console.error(`Plugin '${name}' not found`);
-      return false;
-    }
+      // Render method
+      render: definition.render || (() => ''),
 
-    if (plugin.installed) {
-      console.warn(`Plugin '${name}' already installed`);
-      return true;
-    }
-
-    // Check dependencies
-    for (const dep of plugin.dependencies) {
-      if (!this.plugins.has(dep) || !this.plugins.get(dep).installed) {
-        console.error(`Plugin '${name}' requires '${dep}'`);
-        return false;
-      }
-    }
-
-    try {
-      await plugin.install(this);
-      plugin.installed = true;
-      console.log(`✓ Plugin '${name}' installed`);
-      return true;
-    } catch (error) {
-      console.error(`Failed to install plugin '${name}':`, error);
-      return false;
-    }
-  }
-
-  /**
-   * Uninstall a plugin
-   */
-  async uninstallPlugin(name) {
-    const plugin = this.plugins.get(name);
-    if (!plugin || !plugin.installed) return false;
-
-    try {
-      await plugin.uninstall(this);
-      plugin.installed = false;
-      console.log(`✓ Plugin '${name}' uninstalled`);
-      return true;
-    } catch (error) {
-      console.error(`Failed to uninstall plugin '${name}':`, error);
-      return false;
-    }
-  }
-
-  // ========== DOM WATCHERS ==========
-
-  /**
-   * Watch DOM element for changes
-   */
-  watchElement(selector, callback, options = {}) {
-    const element = typeof selector === 'string' ? this.$(selector) : selector;
-    if (!element) return null;
-
-    const observer = new MutationObserver((mutations) => {
-      callback(mutations, element);
-    });
-
-    observer.observe(element, {
-      childList: options.childList !== false,
-      attributes: options.attributes || false,
-      characterData: options.characterData || false,
-      subtree: options.subtree || false,
-      attributeOldValue: options.attributeOldValue || false,
-      characterDataOldValue: options.characterDataOldValue || false
-    });
-
-    const watcherId = Date.now() + Math.random();
-    this.watchers.set(watcherId, observer);
-    return watcherId;
-  }
-
-  /**
-   * Stop watching an element
-   */
-  unwatchElement(watcherId) {
-    const observer = this.watchers.get(watcherId);
-    if (observer) {
-      observer.disconnect();
-      this.watchers.delete(watcherId);
-    }
-  }
-
-  // ========== ANIMATION API ==========
-
-  _createAnimationAPI() {
-    return {
-      animate: (element, keyframes, options = {}) => {
-        const el = typeof element === 'string' ? this.$(element) : element;
-        if (!el) return null;
-        return el.animate(keyframes, {
-          duration: options.duration || 300,
-          easing: options.easing || 'ease',
-          fill: options.fill || 'forwards',
-          ...options
-        });
+      // State management
+      setState(updates) {
+        Object.assign(this.state, updates);
+        this.update();
       },
-      
-      fadeIn: (element, duration = 300) => {
-        const el = typeof element === 'string' ? this.$(element) : element;
-        if (!el) return null;
-        return el.animate([
-          { opacity: 0 },
-          { opacity: 1 }
-        ], { duration, fill: 'forwards' });
+
+      // Update the component
+      update() {
+        if (!this.el || !this.mounted) return;
+        const html = this.render(this.props, this.state);
+        this.el.innerHTML = html;
+        this.onUpdate(this.props, this.state);
       },
-      
-      fadeOut: (element, duration = 300) => {
-        const el = typeof element === 'string' ? this.$(element) : element;
-        if (!el) return null;
-        return el.animate([
-          { opacity: 1 },
-          { opacity: 0 }
-        ], { duration, fill: 'forwards' });
+
+      // Mount to DOM
+      mount(containerEl) {
+        if (!containerEl) return;
+        this.el = document.createElement('div');
+        this.el.className = `component-${name}`;
+        this.el.innerHTML = this.render(this.props, this.state);
+        containerEl.appendChild(this.el);
+        this.mounted = true;
+        this.onMount(this.el);
       },
-      
-      slideIn: (element, direction = 'left', duration = 300) => {
-        const el = typeof element === 'string' ? this.$(element) : element;
-        if (!el) return null;
-        const transforms = {
-          left: ['translateX(-100%)', 'translateX(0)'],
-          right: ['translateX(100%)', 'translateX(0)'],
-          up: ['translateY(-100%)', 'translateY(0)'],
-          down: ['translateY(100%)', 'translateY(0)']
-        };
-        return el.animate([
-          { transform: transforms[direction][0], opacity: 0 },
-          { transform: transforms[direction][1], opacity: 1 }
-        ], { duration, fill: 'forwards', easing: 'ease-out' });
+
+      // Unmount from DOM
+      unmount() {
+        this._cleanup.forEach(fn => fn());
+        this.onDestroy();
+        this.el?.remove();
+        this.mounted = false;
       },
-      
-      pulse: (element, duration = 600) => {
-        const el = typeof element === 'string' ? this.$(element) : element;
-        if (!el) return null;
-        return el.animate([
-          { transform: 'scale(1)' },
-          { transform: 'scale(1.05)' },
-          { transform: 'scale(1)' }
-        ], { duration, easing: 'ease-in-out' });
+
+      // Watch for prop/state changes
+      watch(key, callback) {
+        this._watchers.push({ key, callback });
       },
-      
-      shake: (element, duration = 500) => {
-        const el = typeof element === 'string' ? this.$(element) : element;
-        if (!el) return null;
-        return el.animate([
-          { transform: 'translateX(0)' },
-          { transform: 'translateX(-10px)' },
-          { transform: 'translateX(10px)' },
-          { transform: 'translateX(-10px)' },
-          { transform: 'translateX(10px)' },
-          { transform: 'translateX(0)' }
-        ], { duration, easing: 'ease-in-out' });
+
+      // Add cleanup function
+      onCleanup(fn) {
+        this._cleanup.push(fn);
       }
     };
-  }
 
-  // ========== VALIDATION SYSTEM ==========
-
-  /**
-   * Register a validation rule
-   */
-  registerValidator(name, validator) {
-    this.validators.set(name, validator);
-  }
-
-  /**
-   * Validate data against rules
-   */
-  validate(data, rules) {
-    const errors = {};
+    instance.onCreate(instance.props);
     
-    for (const [field, fieldRules] of Object.entries(rules)) {
-      const value = data[field];
-      const fieldErrors = [];
-      
-      for (const rule of fieldRules) {
-        const [ruleName, ...params] = rule.split(':');
-        const validator = this.validators.get(ruleName);
-        
-        if (validator) {
-          const result = validator(value, params, data);
-          if (result !== true) {
-            fieldErrors.push(result);
-          }
+    if (container) {
+      instance.mount(container);
+    }
+
+    const id = `${name}-${Date.now()}-${Math.random()}`;
+    this._componentInstances.set(id, instance);
+
+    return instance;
+  }
+
+  // ========== ADVANCED HTTP CLIENT ==========
+
+  http = {
+    _interceptors: { request: [], response: [] },
+    _cache: new Map(),
+
+    /**
+     * Add request interceptor
+     */
+    interceptRequest(fn) {
+      this._interceptors.request.push(fn);
+    },
+
+    /**
+     * Add response interceptor
+     */
+    interceptResponse(fn) {
+      this._interceptors.response.push(fn);
+    },
+
+    /**
+     * Make HTTP request with interceptors and caching
+     */
+    async request(url, options = {}) {
+      // Apply request interceptors
+      for (const interceptor of this._interceptors.request) {
+        options = await interceptor(url, options) || options;
+      }
+
+      // Check cache
+      const cacheKey = `${options.method || 'GET'}:${url}`;
+      if (options.cache && this._cache.has(cacheKey)) {
+        const cached = this._cache.get(cacheKey);
+        if (Date.now() - cached.timestamp < (options.cacheTime || 60000)) {
+          return cached.data;
         }
       }
+
+      try {
+        let response = await fetch(url, options);
+
+        // Apply response interceptors
+        for (const interceptor of this._interceptors.response) {
+          response = await interceptor(response) || response;
+        }
+
+        const data = await response.json();
+
+        // Cache if requested
+        if (options.cache) {
+          this._cache.set(cacheKey, { data, timestamp: Date.now() });
+        }
+
+        return data;
+      } catch (error) {
+        console.error('HTTP request failed:', error);
+        throw error;
+      }
+    },
+
+    get(url, options = {}) {
+      return this.request(url, { ...options, method: 'GET' });
+    },
+
+    post(url, data, options = {}) {
+      return this.request(url, {
+        ...options,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...options.headers },
+        body: JSON.stringify(data)
+      });
+    },
+
+    put(url, data, options = {}) {
+      return this.request(url, {
+        ...options,
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...options.headers },
+        body: JSON.stringify(data)
+      });
+    },
+
+    delete(url, options = {}) {
+      return this.request(url, { ...options, method: 'DELETE' });
+    }
+  };
+
+  // ========== MODAL SYSTEM ==========
+
+  _modals = [];
+
+  /**
+   * Show a modal dialog
+   */
+  showModal(options = {}) {
+    const {
+      title = '',
+      content = '',
+      buttons = [{ text: 'OK', primary: true }],
+      onClose = () => {},
+      closeOnBackdrop = true,
+      size = 'medium'
+    } = options;
+
+    const modalId = `modal-${Date.now()}`;
+    
+    const modal = {
+      id: modalId,
+      close: () => this.closeModal(modalId)
+    };
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'exw3-modal-backdrop';
+    backdrop.style.cssText = `
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      backdrop-filter: blur(4px);
+    `;
+
+    if (closeOnBackdrop) {
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) {
+          modal.close();
+          onClose();
+        }
+      });
+    }
+
+    const sizeMap = {
+      small: '400px',
+      medium: '600px',
+      large: '800px',
+      full: '90vw'
+    };
+
+    const modalEl = document.createElement('div');
+    modalEl.className = 'exw3-modal';
+    modalEl.id = modalId;
+    modalEl.style.cssText = `
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: ${sizeMap[size] || sizeMap.medium};
+      width: 100%;
+      max-height: 90vh;
+      overflow: auto;
+      animation: modalSlideIn 0.3s ease-out;
+    `;
+
+    modalEl.innerHTML = `
+      <div class="modal-header" style="padding: 20px; border-bottom: 1px solid #eee;">
+        <h2 style="margin: 0; font-size: 1.5rem;">${title}</h2>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        ${content}
+      </div>
+      <div class="modal-footer" style="padding: 20px; border-top: 1px solid #eee; display: flex; gap: 10px; justify-content: flex-end;">
+        ${buttons.map((btn, i) => `
+          <button 
+            data-modal-btn="${i}"
+            style="
+              padding: 10px 20px;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+              font-size: 1rem;
+              ${btn.primary ? 'background: #007bff; color: white;' : 'background: #f0f0f0; color: #333;'}
+            "
+          >${btn.text}</button>
+        `).join('')}
+      </div>
+    `;
+
+    // Add animation keyframes
+    if (!document.getElementById('modal-animations')) {
+      const style = document.createElement('style');
+      style.id = 'modal-animations';
+      style.textContent = `
+        @keyframes modalSlideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-50px) scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Handle button clicks
+    buttons.forEach((btn, i) => {
+      const btnEl = modalEl.querySelector(`[data-modal-btn="${i}"]`);
+      btnEl.addEventListener('click', () => {
+        if (btn.onClick) btn.onClick(modal);
+        if (btn.close !== false) modal.close();
+      });
+    });
+
+    backdrop.appendChild(modalEl);
+    document.body.appendChild(backdrop);
+
+    this._modals.push({ id: modalId, backdrop, onClose });
+
+    return modal;
+  }
+
+  /**
+   * Close a modal
+   */
+  closeModal(modalId) {
+    const index = this._modals.findIndex(m => m.id === modalId);
+    if (index === -1) return;
+
+    const modal = this._modals[index];
+    modal.backdrop.remove();
+    modal.onClose();
+    this._modals.splice(index, 1);
+  }
+
+  /**
+   * Close all modals
+   */
+  closeAllModals() {
+    this._modals.forEach(m => m.backdrop.remove());
+    this._modals = [];
+  }
+
+  // ========== TOAST NOTIFICATIONS ==========
+
+  _toasts = [];
+
+  /**
+   * Show a toast notification
+   */
+  showToast(message, options = {}) {
+    const {
+      type = 'info', // info, success, warning, error
+      duration = 3000,
+      position = 'top-right' // top-right, top-left, bottom-right, bottom-left, top-center, bottom-center
+    } = options;
+
+    const toastId = `toast-${Date.now()}`;
+
+    // Create container if it doesn't exist
+    let container = document.getElementById(`toast-container-${position}`);
+    if (!container) {
+      container = document.createElement('div');
+      container.id = `toast-container-${position}`;
+      container.style.cssText = `
+        position: fixed;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        ${position.includes('top') ? 'top: 20px;' : 'bottom: 20px;'}
+        ${position.includes('left') ? 'left: 20px;' : ''}
+        ${position.includes('right') ? 'right: 20px;' : ''}
+        ${position.includes('center') ? 'left: 50%; transform: translateX(-50%);' : ''}
+      `;
+      document.body.appendChild(container);
+    }
+
+    const colors = {
+      info: { bg: '#3498db', icon: 'ℹ️' },
+      success: { bg: '#2ecc71', icon: '✓' },
+      warning: { bg: '#f39c12', icon: '⚠️' },
+      error: { bg: '#e74c3c', icon: '✕' }
+    };
+
+    const color = colors[type] || colors.info;
+
+    const toast = document.createElement('div');
+    toast.id = toastId;
+    toast.style.cssText = `
+      background: ${color.bg};
+      color: white;
+      padding: 15px 20px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 250px;
+      animation: toastSlideIn 0.3s ease-out;
+    `;
+
+    toast.innerHTML = `
+      <span style="font-size: 1.2rem;">${color.icon}</span>
+      <span style="flex: 1;">${message}</span>
+      <button 
+        onclick="this.parentElement.remove()"
+        style="
+          background: none;
+          border: none;
+          color: white;
+          cursor: pointer;
+          font-size: 1.2rem;
+          padding: 0;
+          opacity: 0.7;
+        "
+      >×</button>
+    `;
+
+    // Add animation
+    if (!document.getElementById('toast-animations')) {
+      const style = document.createElement('style');
+      style.id = 'toast-animations';
+      style.textContent = `
+        @keyframes toastSlideIn {
+          from {
+            opacity: 0;
+            transform: translateX(${position.includes('right') ? '100%' : '-100%'});
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    container.appendChild(toast);
+    this._toasts.push(toastId);
+
+    if (duration > 0) {
+      setTimeout(() => {
+        toast.remove();
+        this._toasts = this._toasts.filter(id => id !== toastId);
+      }, duration);
+    }
+
+    return toastId;
+  }
+
+  // ========== FORM VALIDATION ==========
+
+  validators = {
+    required: (value) => value !== '' && value !== null && value !== undefined,
+    email: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+    url: (value) => /^https?:\/\/.+/.test(value),
+    min: (min) => (value) => Number(value) >= min,
+    max: (max) => (value) => Number(value) <= max,
+    minLength: (min) => (value) => value.length >= min,
+    maxLength: (max) => (value) => value.length <= max,
+    pattern: (regex) => (value) => regex.test(value),
+    custom: (fn) => fn
+  };
+
+  /**
+   * Validate form data
+   */
+  validateForm(data, rules) {
+    const errors = {};
+
+    for (const [field, fieldRules] of Object.entries(rules)) {
+      const value = data[field];
       
-      if (fieldErrors.length > 0) {
-        errors[field] = fieldErrors;
+      for (const [rule, param] of Object.entries(fieldRules)) {
+        const validator = typeof param === 'function' ? param : this.validators[rule];
+        
+        if (!validator) {
+          console.warn(`Unknown validator: ${rule}`);
+          continue;
+        }
+
+        const isValid = typeof param === 'function' 
+          ? validator(value)
+          : validator(param)(value);
+
+        if (!isValid) {
+          if (!errors[field]) errors[field] = [];
+          errors[field].push(fieldRules.message || `${field} validation failed`);
+        }
       }
     }
-    
-    if (Object.keys(errors).length > 0) {
-      this.executeHook('validation-fail', { data, rules, errors });
-    }
-    
+
     return {
       valid: Object.keys(errors).length === 0,
       errors
     };
   }
 
-  /**
-   * Initialize default validators
-   */
-  _initDefaultValidators() {
-    this.registerValidator('required', (value) => {
-      return value !== null && value !== undefined && value !== '' || 'This field is required';
-    });
-    
-    this.registerValidator('email', (value) => {
-      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return !value || regex.test(value) || 'Invalid email address';
-    });
-    
-    this.registerValidator('min', (value, [min]) => {
-      return !value || value.length >= parseInt(min) || `Minimum length is ${min}`;
-    });
-    
-    this.registerValidator('max', (value, [max]) => {
-      return !value || value.length <= parseInt(max) || `Maximum length is ${max}`;
-    });
-    
-    this.registerValidator('numeric', (value) => {
-      return !value || !isNaN(value) || 'Must be a number';
-    });
-    
-    this.registerValidator('url', (value) => {
+  // ========== ANIMATION UTILITIES ==========
+
+  animate = {
+    /**
+     * Fade in element
+     */
+    fadeIn(el, duration = 300) {
+      el.style.opacity = '0';
+      el.style.transition = `opacity ${duration}ms`;
+      setTimeout(() => el.style.opacity = '1', 10);
+    },
+
+    /**
+     * Fade out element
+     */
+    fadeOut(el, duration = 300) {
+      el.style.transition = `opacity ${duration}ms`;
+      el.style.opacity = '0';
+      return new Promise(resolve => setTimeout(resolve, duration));
+    },
+
+    /**
+     * Slide in element
+     */
+    slideIn(el, direction = 'left', duration = 300) {
+      const transforms = {
+        left: 'translateX(-100%)',
+        right: 'translateX(100%)',
+        top: 'translateY(-100%)',
+        bottom: 'translateY(100%)'
+      };
+      
+      el.style.transform = transforms[direction];
+      el.style.transition = `transform ${duration}ms ease-out`;
+      setTimeout(() => el.style.transform = 'translate(0, 0)', 10);
+    },
+
+    /**
+     * Bounce element
+     */
+    bounce(el) {
+      el.style.animation = 'bounce 0.5s';
+      setTimeout(() => el.style.animation = '', 500);
+      
+      if (!document.getElementById('bounce-animation')) {
+        const style = document.createElement('style');
+        style.id = 'bounce-animation';
+        style.textContent = `
+          @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    },
+
+    /**
+     * Shake element
+     */
+    shake(el) {
+      el.style.animation = 'shake 0.5s';
+      setTimeout(() => el.style.animation = '', 500);
+      
+      if (!document.getElementById('shake-animation')) {
+        const style = document.createElement('style');
+        style.id = 'shake-animation';
+        style.textContent = `
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    },
+
+    /**
+     * Pulse element
+     */
+    pulse(el) {
+      el.style.animation = 'pulse 0.5s';
+      setTimeout(() => el.style.animation = '', 500);
+      
+      if (!document.getElementById('pulse-animation')) {
+        const style = document.createElement('style');
+        style.id = 'pulse-animation';
+        style.textContent = `
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+  };
+
+  // ========== UTILITY FUNCTIONS ==========
+
+  utils = {
+    /**
+     * Debounce function calls
+     */
+    debounce(fn, delay = 300) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn.apply(this, args), delay);
+      };
+    },
+
+    /**
+     * Throttle function calls
+     */
+    throttle(fn, limit = 300) {
+      let inThrottle;
+      return function(...args) {
+        if (!inThrottle) {
+          fn.apply(this, args);
+          inThrottle = true;
+          setTimeout(() => inThrottle = false, limit);
+        }
+      };
+    },
+
+    /**
+     * Deep clone object
+     */
+    deepClone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    },
+
+    /**
+     * Deep merge objects
+     */
+    deepMerge(target, ...sources) {
+      for (const source of sources) {
+        for (const key in source) {
+          if (source[key] instanceof Object && key in target) {
+            Object.assign(source[key], this.deepMerge(target[key], source[key]));
+          }
+        }
+        Object.assign(target, source);
+      }
+      return target;
+    },
+
+    /**
+     * Generate unique ID
+     */
+    uniqueId(prefix = 'id') {
+      return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    },
+
+    /**
+     * Format date
+     */
+    formatDate(date, format = 'YYYY-MM-DD') {
+      const d = new Date(date);
+      const map = {
+        YYYY: d.getFullYear(),
+        MM: String(d.getMonth() + 1).padStart(2, '0'),
+        DD: String(d.getDate()).padStart(2, '0'),
+        HH: String(d.getHours()).padStart(2, '0'),
+        mm: String(d.getMinutes()).padStart(2, '0'),
+        ss: String(d.getSeconds()).padStart(2, '0')
+      };
+      return format.replace(/YYYY|MM|DD|HH|mm|ss/g, match => map[match]);
+    },
+
+    /**
+     * Sanitize HTML
+     */
+    sanitizeHTML(html) {
+      const div = document.createElement('div');
+      div.textContent = html;
+      return div.innerHTML;
+    },
+
+    /**
+     * Parse query string
+     */
+    parseQuery(search = window.location.search) {
+      return Object.fromEntries(new URLSearchParams(search));
+    },
+
+    /**
+     * Build query string
+     */
+    buildQuery(params) {
+      return new URLSearchParams(params).toString();
+    },
+
+    /**
+     * Random number between min and max
+     */
+    random(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    },
+
+    /**
+     * Clamp number between min and max
+     */
+    clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    },
+
+    /**
+     * Linear interpolation
+     */
+    lerp(start, end, t) {
+      return start + (end - start) * t;
+    },
+
+    /**
+     * Check if element is in viewport
+     */
+    isInViewport(el) {
+      const rect = el.getBoundingClientRect();
+      return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= window.innerHeight &&
+        rect.right <= window.innerWidth
+      );
+    },
+
+    /**
+     * Scroll to element
+     */
+    scrollTo(el, options = {}) {
+      el.scrollIntoView({ behavior: 'smooth', ...options });
+    },
+
+    /**
+     * Copy to clipboard
+     */
+    async copyToClipboard(text) {
       try {
-        new URL(value);
+        await navigator.clipboard.writeText(text);
         return true;
-      } catch {
-        return 'Invalid URL';
+      } catch (err) {
+        console.error('Failed to copy:', err);
+        return false;
       }
-    });
-  }
+    },
 
-  // ========== DATA TRANSFORMERS ==========
-
-  /**
-   * Register a data transformer
-   */
-  registerTransformer(name, transformer) {
-    this.transformers.set(name, transformer);
-  }
-
-  /**
-   * Transform data using registered transformer
-   */
-  transform(data, transformerName, ...args) {
-    const transformer = this.transformers.get(transformerName);
-    if (!transformer) {
-      console.warn(`Transformer '${transformerName}' not found`);
-      return data;
+    /**
+     * Download file
+     */
+    downloadFile(content, filename, type = 'text/plain') {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
     }
-    return transformer(data, ...args);
-  }
+  };
 
-  /**
-   * Initialize default transformers
-   */
-  _initDefaultTransformers() {
-    this.registerTransformer('uppercase', (str) => String(str).toUpperCase());
-    this.registerTransformer('lowercase', (str) => String(str).toLowerCase());
-    this.registerTransformer('capitalize', (str) => {
-      const s = String(str);
-      return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-    });
-    this.registerTransformer('trim', (str) => String(str).trim());
-    this.registerTransformer('truncate', (str, length = 50) => {
-      const s = String(str);
-      return s.length > length ? s.slice(0, length) + '...' : s;
-    });
-    this.registerTransformer('slugify', (str) => {
-      return String(str)
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/[\s_-]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-    });
-    this.registerTransformer('currency', (num, symbol = '$') => {
-      return symbol + Number(num).toFixed(2);
-    });
-    this.registerTransformer('percentage', (num) => {
-      return (Number(num) * 100).toFixed(2) + '%';
-    });
-  }
+  // ========== PERFORMANCE MONITORING ==========
 
-  // ========== CACHE SYSTEM ==========
+  performance = {
+    _marks: new Map(),
+    _measures: [],
 
-  /**
-   * Set cache value with optional TTL
-   */
-  setCache(key, value, ttl = null) {
-    this.cache.set(key, {
-      value,
-      expires: ttl ? Date.now() + ttl : null
-    });
-  }
+    /**
+     * Start performance mark
+     */
+    mark(name) {
+      this._marks.set(name, performance.now());
+    },
 
-  /**
-   * Get cache value
-   */
-  getCache(key, defaultValue = null) {
-    const cached = this.cache.get(key);
-    if (!cached) {
-      this.executeHook('cache-miss', { key });
-      return defaultValue;
-    }
-    
-    if (cached.expires && Date.now() > cached.expires) {
-      this.cache.delete(key);
-      this.executeHook('cache-miss', { key, reason: 'expired' });
-      return defaultValue;
-    }
-    
-    return cached.value;
-  }
-
-  /**
-   * Clear cache
-   */
-  clearCache(pattern = null) {
-    if (!pattern) {
-      this.cache.clear();
-    } else {
-      const regex = new RegExp(pattern);
-      for (const key of this.cache.keys()) {
-        if (regex.test(key)) {
-          this.cache.delete(key);
-        }
+    /**
+     * Measure time between marks
+     */
+    measure(name, startMark, endMark = null) {
+      const start = this._marks.get(startMark);
+      const end = endMark ? this._marks.get(endMark) : performance.now();
+      
+      if (start === undefined) {
+        console.warn(`Start mark '${startMark}' not found`);
+        return null;
       }
+
+      const duration = end - start;
+      this._measures.push({ name, duration, timestamp: Date.now() });
+      console.log(`⏱️ ${name}: ${duration.toFixed(2)}ms`);
+      return duration;
+    },
+
+    /**
+     * Get all measures
+     */
+    getMeasures() {
+      return [...this._measures];
+    },
+
+    /**
+     * Clear all marks and measures
+     */
+    clear() {
+      this._marks.clear();
+      this._measures = [];
     }
-  }
-
-  // ========== TASK SCHEDULER ==========
-
-  _createScheduler() {
-    const tasks = new Map();
-    
-    return {
-      schedule: (name, callback, interval) => {
-        if (tasks.has(name)) {
-          console.warn(`Task '${name}' already scheduled`);
-          return;
-        }
-        
-        const id = setInterval(callback, interval);
-        tasks.set(name, { id, callback, interval });
-      },
-      
-      scheduleOnce: (name, callback, delay) => {
-        if (tasks.has(name)) {
-          console.warn(`Task '${name}' already scheduled`);
-          return;
-        }
-        
-        const id = setTimeout(() => {
-          callback();
-          tasks.delete(name);
-        }, delay);
-        tasks.set(name, { id, callback, delay, once: true });
-      },
-      
-      cancel: (name) => {
-        const task = tasks.get(name);
-        if (task) {
-          if (task.once) {
-            clearTimeout(task.id);
-          } else {
-            clearInterval(task.id);
-          }
-          tasks.delete(name);
-        }
-      },
-      
-      cancelAll: () => {
-        for (const [name, task] of tasks) {
-          if (task.once) {
-            clearTimeout(task.id);
-          } else {
-            clearInterval(task.id);
-          }
-        }
-        tasks.clear();
-      },
-      
-      list: () => Array.from(tasks.keys())
-    };
-  }
-
-  // ========== INTERNATIONALIZATION ==========
-
-  _createI18nAPI() {
-    let currentLocale = 'en';
-    const translations = new Map();
-    
-    return {
-      setLocale: (locale) => {
-        currentLocale = locale;
-        this.eventBus.emit('locale-change', { locale });
-      },
-      
-      getLocale: () => currentLocale,
-      
-      addTranslations: (locale, messages) => {
-        if (!translations.has(locale)) {
-          translations.set(locale, {});
-        }
-        Object.assign(translations.get(locale), messages);
-      },
-      
-      t: (key, params = {}) => {
-        const messages = translations.get(currentLocale) || {};
-        let message = messages[key] || key;
-        
-        // Replace parameters
-        for (const [param, value] of Object.entries(params)) {
-          message = message.replace(new RegExp(`{${param}}`, 'g'), value);
-        }
-        
-        return message;
-      },
-      
-      hasTranslation: (key, locale = currentLocale) => {
-        const messages = translations.get(locale) || {};
-        return key in messages;
-      }
-    };
-  }
-
-  // ========== SECURITY API ==========
-
-  _createSecurityAPI() {
-    return {
-      sanitizeHTML: (html) => {
-        const div = document.createElement('div');
-        div.textContent = html;
-        return div.innerHTML;
-      },
-      
-      escapeHTML: (str) => {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-      },
-      
-      sanitizeURL: (url) => {
-        try {
-          const parsed = new URL(url);
-          if (!['http:', 'https:'].includes(parsed.protocol)) {
-            return '#';
-          }
-          return url;
-        } catch {
-          return '#';
-        }
-      },
-      
-      generateToken: (length = 32) => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let token = '';
-        for (let i = 0; i < length; i++) {
-          token += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return token;
-      },
-      
-      hash: async (str) => {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(str);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      },
-      
-      validateCSRF: (token) => {
-        const stored = this.storage.session.get('csrf-token');
-        return stored === token;
-      },
-      
-      generateCSRF: () => {
-        const token = this.security.generateToken();
-        this.storage.session.set('csrf-token', token);
-        return token;
-      }
-    };
-  }
-
-  // ========== INITIALIZATION ==========
-
-  /**
-   * Initialize kernel with all systems
-   */
-  async _initializeSystems() {
-    this._initDefaultValidators();
-    this._initDefaultTransformers();
-  }
+  };
 }
 
-// Export for use
+// Make kernel available globally
+if (typeof window !== 'undefined') {
+  window.EXW3Kernel = EXW3Kernel;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = EXW3Kernel;
 }
@@ -2367,15 +2725,10 @@ if (typeof module !== 'undefined' && module.exports) {
  */
 
 class EXW3ModManager {
-  constructor(kernel, config = {}) {
+  constructor(kernel) {
     this.kernel = kernel;
     this.loadedMods = new Map();
-    
-    // Use config-defined structure or defaults
-    const structure = config.structure || {};
-    this.baseDir = structure.modsFolder || 'Mods';
-    this.adminDir = structure.adminFolder || 'Mods/Admin';
-    this.examplesDir = structure.examplesFolder || 'Mods/Examples';
+    this.baseDir = 'Mods';
   }
 
   /**
@@ -2384,29 +2737,17 @@ class EXW3ModManager {
   async loadAllMods(config) {
     console.log('Starting mod load...');
 
-    // Auto-discovery: if mods array is empty or "*", scan the mods folder
-    if (!config.mods || config.mods.length === 0 || (config.mods.length === 1 && config.mods[0] === '*')) {
-      console.log('🔍 Auto-discovering mods...');
-      await this.autoDiscoverMods();
-    }
-    // Load unified mods list
-    else if (config.mods && Array.isArray(config.mods)) {
-      for (const modConfig of config.mods) {
-        await this.loadMod(modConfig);
+    // Load layers
+    if (config.layers && Array.isArray(config.layers)) {
+      for (const layerConfig of config.layers) {
+        await this.loadLayer(layerConfig);
       }
     }
-    // Legacy support for separate layers/sections
-    else {
-      if (config.layers && Array.isArray(config.layers)) {
-        for (const layerConfig of config.layers) {
-          await this.loadLayer(layerConfig);
-        }
-      }
 
-      if (config.sections && Array.isArray(config.sections)) {
-        for (const sectionConfig of config.sections) {
-          await this.loadSection(sectionConfig);
-        }
+    // Load sections
+    if (config.sections && Array.isArray(config.sections)) {
+      for (const sectionConfig of config.sections) {
+        await this.loadSection(sectionConfig);
       }
     }
 
@@ -2414,190 +2755,35 @@ class EXW3ModManager {
   }
 
   /**
-   * Auto-discover mods from the mods folder
-   */
-  async autoDiscoverMods() {
-    const discoveredMods = [];
-    
-    // Try to get mod list from server endpoint
-    try {
-      const response = await fetch('/__mods_list__');
-      if (response.ok) {
-        const modsList = await response.json();
-        console.log(`📦 Found ${modsList.length} mods:`, modsList.map(m => m.name).join(', '));
-        
-        // Load all discovered mods
-        for (const mod of modsList) {
-          await this.loadModFromPath(mod.name, mod.path);
-        }
-        return;
-      }
-    } catch (error) {
-      console.warn('Server does not support auto-discovery endpoint');
-    }
-    
-    // Fallback: try common mod names
-    console.log('📦 Using fallback mod discovery...');
-    const commonMods = [
-      'permissions', 'login', 'base-styling', 'dark-mode', 'header-bar',
-      'nav-router', 'dashboard', 'about', 'calc', 'clock', 'links', 
-      'notes', 'settings', 'admin-panel', 'login-settings'
-    ];
-    
-    for (const modName of commonMods) {
-      await this.loadMod(modName);
-    }
-  }
-
-  /**
-   * Scan a folder for .ex3 files (deprecated - use server endpoint)
-   */
-  async scanFolder(folderPath) {
-    return [];
-  }
-
-  /**
-   * Load a mod from a specific path
-   */
-  async loadModFromPath(modName, modPath) {
-    try {
-      const modData = await EXW3Utils.loadModFile(modPath);
-      if (!modData) throw new Error('Failed to parse file');
-
-      const validation = EXW3Utils.validateMod({
-        name: modData.name,
-        type: modData.type
-      });
-
-      if (!validation.valid) {
-        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
-      }
-
-      const modModule = EXW3Utils.createUnifiedModFromEx3(modData, modName);
-      
-      // Register based on type
-      const modType = modData.type || 'both';
-      if (modType === 'layer' || modType === 'both') {
-        this.kernel.registerLayer(modName, modModule);
-        this.loadedMods.set(`layer:${modName}`, modData);
-      }
-      if (modType === 'section' || modType === 'both') {
-        this.kernel.registerSection(modName, modModule);
-        this.loadedMods.set(`section:${modName}`, modData);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error(`Failed to load mod '${modName}' from ${modPath}:`, error);
-      return false;
-    }
-  }
-
-  /**
-   * Load a mod from unified structure (searches Mods/ and Mods/Admin/)
-   */
-  async loadMod(modConfig) {
-    let modName, modPath;
-
-    if (typeof modConfig === 'string') {
-      modName = modConfig;
-      // Try multiple locations
-      const locations = [
-        `${this.baseDir}/${modName}.ex3`,
-        `${this.adminDir}/${modName}.ex3`,
-        `${this.baseDir}/Layers/${modName}.ex3`,
-        `${this.baseDir}/Sections/${modName}.ex3`
-      ];
-
-      for (const location of locations) {
-        const response = await fetch(location).catch(() => null);
-        if (response && response.ok) {
-          modPath = location;
-          break;
-        }
-      }
-
-      if (!modPath) {
-        console.warn(`Mod '${modName}' not found in any location`);
-        return false;
-      }
-    } else {
-      modName = modConfig.name;
-      modPath = modConfig.path || `${this.baseDir}/${modName}.ex3`;
-    }
-
-    try {
-      const modData = await EXW3Utils.loadModFile(modPath);
-      if (!modData) throw new Error('Failed to parse file');
-
-      const validation = EXW3Utils.validateMod({
-        name: modData.name,
-        type: modData.type
-      });
-
-      if (!validation.valid) {
-        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
-      }
-
-      const modModule = EXW3Utils.createUnifiedModFromEx3(modData, modName);
-      
-      // Register based on type
-      const modType = modData.type || 'both';
-      if (modType === 'layer' || modType === 'both') {
-        this.kernel.registerLayer(modName, modModule);
-        this.loadedMods.set(`layer:${modName}`, modData);
-      }
-      if (modType === 'section' || modType === 'both') {
-        this.kernel.registerSection(modName, modModule);
-        this.loadedMods.set(`section:${modName}`, modData);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error(`Failed to load mod '${modName}':`, error);
-      return false;
-    }
-  }
-
-  /**
-   * Load a single layer from .exwl3 or .ex3 file
+   * Load a single layer from .exwl3 file
    */
   async loadLayer(layerConfig) {
     let layerName, layerPath;
 
     if (typeof layerConfig === 'string') {
       layerName = layerConfig;
-      // Try .ex3 first, then fall back to .exwl3
-      layerPath = `${this.baseDir}/Layers/${layerName}.ex3`;
-      const ex3Response = await fetch(layerPath).catch(() => null);
-      if (!ex3Response || !ex3Response.ok) {
-        layerPath = `${this.baseDir}/Layers/${layerName}.exwl3`;
-      }
+      layerPath = `${this.baseDir}/Layers/${layerName}.exwl3`;
     } else {
       layerName = layerConfig.name;
-      layerPath = layerConfig.path || `${this.baseDir}/Layers/${layerName}.ex3`;
+      layerPath = layerConfig.path || `${this.baseDir}/Layers/${layerName}.exwl3`;
     }
 
     try {
-      const modData = await EXW3Utils.loadModFile(layerPath);
-      if (!modData) throw new Error('Failed to parse file');
+      const exwl3Data = await EXW3Utils.loadExwl3File(layerPath);
+      if (!exwl3Data) throw new Error('Failed to parse file');
 
       const validation = EXW3Utils.validateMod({
-        name: modData.name,
-        type: modData.type
+        name: exwl3Data.name,
+        type: exwl3Data.type
       });
 
       if (!validation.valid) {
         throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
       }
 
-      // Use unified mod if .ex3, otherwise use layer-specific
-      const layerModule = layerPath.endsWith('.ex3')
-        ? EXW3Utils.createUnifiedModFromEx3(modData, layerName)
-        : EXW3Utils.createLayerFromExwl3(modData, layerName);
-      
+      const layerModule = EXW3Utils.createLayerFromExwl3(exwl3Data, layerName);
       this.kernel.registerLayer(layerName, layerModule);
-      this.loadedMods.set(`layer:${layerName}`, modData);
+      this.loadedMods.set(`layer:${layerName}`, exwl3Data);
 
       return true;
     } catch (error) {
@@ -2607,44 +2793,35 @@ class EXW3ModManager {
   }
 
   /**
-   * Load a single section from .exws3 or .ex3 file
+   * Load a single section from .exws3 file
    */
   async loadSection(sectionConfig) {
     let sectionName, sectionPath;
 
     if (typeof sectionConfig === 'string') {
       sectionName = sectionConfig;
-      // Try .ex3 first, then fall back to .exws3
-      sectionPath = `${this.baseDir}/Sections/${sectionName}.ex3`;
-      const ex3Response = await fetch(sectionPath).catch(() => null);
-      if (!ex3Response || !ex3Response.ok) {
-        sectionPath = `${this.baseDir}/Sections/${sectionName}.exws3`;
-      }
+      sectionPath = `${this.baseDir}/Sections/${sectionName}.exws3`;
     } else {
       sectionName = sectionConfig.name;
-      sectionPath = sectionConfig.path || `${this.baseDir}/Sections/${sectionName}.ex3`;
+      sectionPath = sectionConfig.path || `${this.baseDir}/Sections/${sectionName}.exws3`;
     }
 
     try {
-      const modData = await EXW3Utils.loadModFile(sectionPath);
-      if (!modData) throw new Error('Failed to parse file');
+      const exws3Data = await EXW3Utils.loadExws3File(sectionPath);
+      if (!exws3Data) throw new Error('Failed to parse file');
 
       const validation = EXW3Utils.validateMod({
-        name: modData.name,
-        type: modData.type
+        name: exws3Data.name,
+        type: exws3Data.type
       });
 
       if (!validation.valid) {
         throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
       }
 
-      // Use unified mod if .ex3, otherwise use section-specific
-      const sectionModule = sectionPath.endsWith('.ex3')
-        ? EXW3Utils.createUnifiedModFromEx3(modData, sectionName)
-        : EXW3Utils.createSectionFromExws3(modData, sectionName);
-      
+      const sectionModule = EXW3Utils.createSectionFromExws3(exws3Data, sectionName);
       this.kernel.registerSection(sectionName, sectionModule);
-      this.loadedMods.set(`section:${sectionName}`, modData);
+      this.loadedMods.set(`section:${sectionName}`, exws3Data);
 
       return true;
     } catch (error) {
@@ -2657,12 +2834,6 @@ class EXW3ModManager {
    * Hot-reload a mod (reload from file)
    */
   async reloadMod(modId) {
-    // Try unified structure first
-    if (await this.loadMod(modId)) {
-      return true;
-    }
-    
-    // Legacy support
     const [type, name] = modId.split(':');
     if (type === 'layer') {
       return await this.loadLayer(name);

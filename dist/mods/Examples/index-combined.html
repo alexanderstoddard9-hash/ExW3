@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXW3 Local Site</title>
+    <link rel="stylesheet" href="Kernel/styles.css">
+</head>
+<body>
+    <div id="app"></div>
+
+    <!-- Combined Kernel (single file) -->
+    <script src="Kernel/exw3-kernel.js"></script>
+
+    <!-- Initialize Site -->
+    <script>
+        (async () => {
+            // Create kernel instance
+            const kernel = new EXW3Kernel();
+
+            // Load configuration with auto-discovery of new mods
+            const config = await fetch('/api/mods')
+                .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .catch(() => fetch('Config/site-config.json').then(r => r.json()));
+
+            // Create mod manager with config
+            const modManager = new EXW3ModManager(kernel, config);
+
+            // Load and register all mods
+            await modManager.loadAllMods(config);
+
+            // Init sections
+            await kernel.init(config);
+
+            // Apply permission layers BEFORE render so section filtering works
+            const PRE_RENDER_MODS = ['login', 'permissions'];
+            if (config.mods) {
+                for (const modName of config.mods) {
+                    if (PRE_RENDER_MODS.includes(modName)) {
+                        kernel.applyLayer(modName);
+                    }
+                }
+            } else if (config.layers) {
+                // Legacy support
+                for (const layerName of config.layers) {
+                    if (PRE_RENDER_MODS.includes(layerName)) {
+                        kernel.applyLayer(layerName);
+                    }
+                }
+            }
+
+            // Render sections (permissions already set, so filtering applies)
+            await kernel.render('app');
+
+            // Apply remaining layers after render so DOM injections work
+            if (config.mods) {
+                for (const modName of config.mods) {
+                    if (!PRE_RENDER_MODS.includes(modName)) {
+                        kernel.applyLayer(modName);
+                    }
+                }
+            } else if (config.layers) {
+                // Legacy support
+                for (const layerName of config.layers) {
+                    if (!PRE_RENDER_MODS.includes(layerName)) {
+                        kernel.applyLayer(layerName);
+                    }
+                }
+            }
+
+            // Expose kernel to console for debugging
+            window.__exw3_kernel = kernel;
+            window.__exw3_modManager = modManager;
+
+            console.log('✓ EXW3 Site initialized successfully');
+            console.log('Use window.__exw3_kernel for debugging');
+        })();
+    </script>
+</body>
+</html>

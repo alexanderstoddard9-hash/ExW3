@@ -1,0 +1,400 @@
+@name "showcase-v3"
+@description "Showcase of EXW3 v3.0 features"
+@version "3.0.0"
+@author "EXW3 Team"
+@type both
+
+state {
+  {
+    count: 0,
+    items: ['Apple', 'Banana', 'Cherry'],
+    showModal: false,
+    username: '',
+    theme: 'light'
+  }
+}
+
+computed {
+  {
+    doubleCount() {
+      return this.state.count * 2;
+    },
+    itemCount() {
+      return this.state.items.length;
+    }
+  }
+}
+
+methods {
+  {
+    increment() {
+      this.state.count++;
+      window.__exw3_kernel.showToast(`Count: ${this.state.count}`, { type: 'success' });
+    },
+    
+    decrement() {
+      this.state.count--;
+      window.__exw3_kernel.showToast(`Count: ${this.state.count}`, { type: 'info' });
+    },
+    
+    reset() {
+      this.state.count = 0;
+      window.__exw3_kernel.showToast('Counter reset!', { type: 'warning' });
+    },
+    
+    openModal() {
+      window.__exw3_kernel.showModal({
+        title: '🎉 EXW3 v3.0 Features',
+        content: `
+          <div style="padding: 20px;">
+            <h3>New Features:</h3>
+            <ul style="text-align: left;">
+              <li>✅ Component System</li>
+              <li>✅ Advanced State Management</li>
+              <li>✅ Modal & Toast Notifications</li>
+              <li>✅ HTTP Client with Interceptors</li>
+              <li>✅ Form Validation</li>
+              <li>✅ Animation Utilities</li>
+              <li>✅ WebSocket Support</li>
+              <li>✅ IndexedDB Wrapper</li>
+              <li>✅ Drag & Drop</li>
+              <li>✅ Keyboard Shortcuts</li>
+              <li>✅ Performance Monitoring</li>
+              <li>✅ And 40+ more features!</li>
+            </ul>
+          </div>
+        `,
+        buttons: [
+          { text: 'Awesome!', primary: true },
+          { text: 'Close', close: true }
+        ],
+        size: 'large'
+      });
+    },
+    
+    testAnimations() {
+      const el = document.querySelector('.showcase-card');
+      if (el) {
+        window.__exw3_kernel.animate.bounce(el);
+      }
+    },
+    
+    testValidation() {
+      const kernel = window.__exw3_kernel;
+      const result = kernel.validateForm(
+        { email: this.state.username },
+        { email: { required: true, email: true, message: 'Valid email required' } }
+      );
+      
+      if (result.valid) {
+        kernel.showToast('Email is valid!', { type: 'success' });
+      } else {
+        kernel.showToast(result.errors.email[0], { type: 'error' });
+      }
+    },
+    
+    addItem() {
+      const item = prompt('Enter item name:');
+      if (item) {
+        this.state.items.push(item);
+        window.__exw3_kernel.showToast(`Added: ${item}`, { type: 'success' });
+      }
+    },
+    
+    removeItem(index) {
+      const item = this.state.items[index];
+      this.state.items.splice(index, 1);
+      window.__exw3_kernel.showToast(`Removed: ${item}`, { type: 'info' });
+    }
+  }
+}
+
+css {
+  .showcase-v3 {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 20px;
+  }
+
+  .showcase-header {
+    text-align: center;
+    margin-bottom: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  }
+
+  .showcase-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 3rem;
+  }
+
+  .showcase-header p {
+    margin: 0;
+    font-size: 1.2rem;
+    opacity: 0.9;
+  }
+
+  .showcase-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  .showcase-card {
+    background: white;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+
+  .showcase-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .showcase-card h3 {
+    margin: 0 0 16px 0;
+    color: #667eea;
+    font-size: 1.5rem;
+  }
+
+  .showcase-button {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.3s, transform 0.1s;
+    margin: 4px;
+  }
+
+  .showcase-button:hover {
+    background: #5568d3;
+  }
+
+  .showcase-button:active {
+    transform: scale(0.95);
+  }
+
+  .showcase-button.secondary {
+    background: #f0f0f0;
+    color: #333;
+  }
+
+  .showcase-button.secondary:hover {
+    background: #e0e0e0;
+  }
+
+  .showcase-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 1rem;
+    margin: 8px 0;
+    transition: border-color 0.3s;
+  }
+
+  .showcase-input:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+
+  .counter-display {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #667eea;
+    text-align: center;
+    margin: 20px 0;
+  }
+
+  .item-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+  }
+
+  .item-list li {
+    background: #f8f9fa;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .item-list button {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .item-list button:hover {
+    background: #c0392b;
+  }
+
+  .feature-badge {
+    display: inline-block;
+    background: #2ecc71;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    margin: 4px;
+  }
+}
+
+html {
+  <div class="showcase-v3">
+    <div class="showcase-header">
+      <h1>🚀 EXW3 v3.0</h1>
+      <p>The Complete Application Framework</p>
+      <div style="margin-top: 20px;">
+        <span class="feature-badge">50+ New Features</span>
+        <span class="feature-badge">Reactive State</span>
+        <span class="feature-badge">Components</span>
+        <span class="feature-badge">Animations</span>
+      </div>
+    </div>
+
+    <div class="showcase-grid">
+      <!-- Counter Card -->
+      <div class="showcase-card">
+        <h3>📊 Reactive Counter</h3>
+        <p>State management with computed properties</p>
+        <div class="counter-display">{{count}}</div>
+        <p style="text-align: center; color: #666;">
+          Double: {{computed.doubleCount}}
+        </p>
+        <div style="text-align: center;">
+          <button class="showcase-button" data-on="click:decrement">-</button>
+          <button class="showcase-button" data-on="click:increment">+</button>
+          <button class="showcase-button secondary" data-on="click:reset">Reset</button>
+        </div>
+      </div>
+
+      <!-- Modal Card -->
+      <div class="showcase-card">
+        <h3>💬 Modal System</h3>
+        <p>Beautiful dialogs with customizable buttons</p>
+        <button class="showcase-button" data-on="click:openModal">
+          Open Modal
+        </button>
+        <button class="showcase-button secondary" data-on="click:testAnimations">
+          Test Animations
+        </button>
+      </div>
+
+      <!-- Form Validation Card -->
+      <div class="showcase-card">
+        <h3>✅ Form Validation</h3>
+        <p>Built-in validators with custom rules</p>
+        <input 
+          type="email" 
+          class="showcase-input" 
+          placeholder="Enter email..."
+          value="{{username}}"
+          oninput="this.closest('.showcase-v3').__mod.state.username = this.value"
+        />
+        <button class="showcase-button" data-on="click:testValidation">
+          Validate Email
+        </button>
+      </div>
+
+      <!-- Dynamic List Card -->
+      <div class="showcase-card">
+        <h3>📝 Dynamic Lists</h3>
+        <p>Reactive list rendering with @for</p>
+        <p style="color: #666;">Items: {{computed.itemCount}}</p>
+        <ul class="item-list">
+          @for(item in items) {
+            <li>
+              <span>{{item}}</span>
+              <button onclick="window.__exw3_kernel.getState('showcase-mod').removeItem({{index}})">
+                Remove
+              </button>
+            </li>
+          }
+        </ul>
+        <button class="showcase-button" data-on="click:addItem">
+          Add Item
+        </button>
+      </div>
+
+      <!-- HTTP Client Card -->
+      <div class="showcase-card">
+        <h3>🌐 HTTP Client</h3>
+        <p>Fetch API wrapper with interceptors and caching</p>
+        <button class="showcase-button" onclick="
+          window.__exw3_kernel.http.get('https://api.github.com/users/github')
+            .then(data => window.__exw3_kernel.showToast('User: ' + data.login, {type: 'success'}))
+            .catch(() => window.__exw3_kernel.showToast('Request failed', {type: 'error'}))
+        ">
+          Test API Call
+        </button>
+      </div>
+
+      <!-- Utilities Card -->
+      <div class="showcase-card">
+        <h3>🛠️ Utilities</h3>
+        <p>50+ utility functions included</p>
+        <button class="showcase-button" onclick="
+          const text = 'EXW3 v3.0 is awesome!';
+          window.__exw3_kernel.utils.copyToClipboard(text);
+          window.__exw3_kernel.showToast('Copied to clipboard!', {type: 'success'});
+        ">
+          Copy to Clipboard
+        </button>
+        <button class="showcase-button secondary" onclick="
+          const id = window.__exw3_kernel.utils.uniqueId('test');
+          window.__exw3_kernel.showToast('ID: ' + id, {type: 'info'});
+        ">
+          Generate ID
+        </button>
+      </div>
+    </div>
+
+    <div class="showcase-card" style="text-align: center;">
+      <h3>🎉 And Much More!</h3>
+      <p style="margin-bottom: 20px;">
+        WebSockets • IndexedDB • Drag & Drop • Keyboard Shortcuts • 
+        Performance Monitoring • Animations • And 40+ more features!
+      </p>
+      <button class="showcase-button" onclick="window.__exw3_kernel.debug()">
+        Debug Kernel
+      </button>
+    </div>
+  </div>
+}
+
+script {
+  // Store reference to this mod for event handlers
+  const showcase = document.querySelector('.showcase-v3');
+  if (showcase) {
+    showcase.__mod = this;
+  }
+
+  // Register keyboard shortcut
+  window.__exw3_kernel.utils.shortcuts.register('ctrl+k', () => {
+    this.methods.openModal();
+  });
+
+  // Log initialization
+  console.log('🚀 EXW3 v3.0 Showcase loaded!');
+  console.log('Press Ctrl+K to open the features modal');
+  
+  // Store mod reference globally for debugging
+  window.__exw3_kernel.setState('showcase-mod', this);
+}
