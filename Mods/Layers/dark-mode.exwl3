@@ -1,0 +1,59 @@
+@name "dark-mode"
+@version "1.0.0"
+@description "Dark mode styling — toggled via Settings"
+@modifies kernel
+@dependencies []
+
+css {
+  body.exw3-dark {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+  }
+
+  body.exw3-dark #exw3-header {
+    background: linear-gradient(135deg, #2a2a4a 0%, #3a2a4a 100%);
+  }
+
+  body.exw3-dark #exw3-nav {
+    background: #111120;
+  }
+
+  body.exw3-dark .exw3-section {
+    background: #2a2a2a;
+    border-color: #444;
+  }
+
+  body.exw3-dark .exw3-card {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+
+  body.exw3-dark .exw3-button {
+    background: #667eea;
+  }
+
+  body.exw3-dark .exw3-input {
+    background: #333;
+    color: #e0e0e0;
+    border-color: #555;
+  }
+
+  body.exw3-dark .note-item {
+    background: #333;
+    border-color: #444;
+  }
+
+  body.exw3-dark .link-card {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+}
+
+init {
+  const saved = JSON.parse(localStorage.getItem('exw3-settings') || '{}');
+  if (saved.theme === 'dark') {
+    document.body.classList.add('exw3-dark');
+  }
+}

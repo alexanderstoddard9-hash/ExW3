@@ -1,0 +1,140 @@
+@name "calc"
+@version "1.1.0"
+@description "A responsive calculator with basic arithmetic operations."
+
+html {
+  <div class="exw3-container">
+    <div class="exw3-card calculator-wrap">
+      <div class="calc-display" id="calc-display">0</div>
+      <div class="calc-grid">
+        <button class="exw3-button secondary" data-action="clear">C</button>
+        <button class="exw3-button secondary" data-action="delete">DEL</button>
+        <button class="exw3-button secondary" data-op="/">÷</button>
+        <button class="exw3-button secondary" data-op="*">×</button>
+        <button class="exw3-button" data-num="7">7</button>
+        <button class="exw3-button" data-num="8">8</button>
+        <button class="exw3-button" data-num="9">9</button>
+        <button class="exw3-button secondary" data-op="-">−</button>
+        <button class="exw3-button" data-num="4">4</button>
+        <button class="exw3-button" data-num="5">5</button>
+        <button class="exw3-button" data-num="6">6</button>
+        <button class="exw3-button secondary" data-op="+">+</button>
+        <button class="exw3-button" data-num="1">1</button>
+        <button class="exw3-button" data-num="2">2</button>
+        <button class="exw3-button" data-num="3">3</button>
+        <button class="exw3-button success" id="calc-equals" style="grid-row: span 2">=</button>
+        <button class="exw3-button" data-num="0" style="grid-column: span 2">0</button>
+        <button class="exw3-button" data-num=".">.</button>
+      </div>
+    </div>
+  </div>
+}
+
+css {
+  .calculator-wrap {
+    max-width: 320px;
+    margin: 40px auto;
+    padding: 20px;
+  }
+  .calc-display {
+    background: #222;
+    color: #0f0;
+    font-family: monospace;
+    font-size: 2rem;
+    padding: 15px;
+    text-align: right;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 40px;
+  }
+  .calc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .calc-grid .exw3-button {
+    padding: 15px 5px;
+    font-weight: bold;
+    font-size: 1.1rem;
+  }
+  .exw3-button.success {
+    background-color: #28a745;
+    color: white;
+  }
+}
+
+javascript {
+  let currentInput = '0';
+  let previousInput = '';
+  let operation = null;
+  let shouldResetScreen = false;
+
+  function updateDisplay() {
+    const display = document.getElementById('calc-display');
+    if (display) display.textContent = currentInput;
+  }
+
+  function appendNumber(num) {
+    if (currentInput === '0' || shouldResetScreen) {
+      currentInput = num;
+      shouldResetScreen = false;
+    } else {
+      if (num === '.' && currentInput.includes('.')) return;
+      currentInput += num;
+    }
+    updateDisplay();
+  }
+
+  function setOperation(op) {
+    if (operation !== null) calculate();
+    previousInput = currentInput;
+    operation = op;
+    shouldResetScreen = true;
+  }
+
+  function calculate() {
+    if (operation === null || shouldResetScreen) return;
+    const prev = parseFloat(previousInput);
+    const current = parseFloat(currentInput);
+    if (isNaN(prev) || isNaN(current)) return;
+    let result;
+    if (operation === '+') result = prev + current;
+    else if (operation === '-') result = prev - current;
+    else if (operation === '*') result = prev * current;
+    else if (operation === '/') result = current === 0 ? 'Error' : prev / current;
+    else return;
+    currentInput = result.toString();
+    operation = null;
+    updateDisplay();
+  }
+
+  function clearCalc() {
+    currentInput = '0';
+    previousInput = '';
+    operation = null;
+    updateDisplay();
+  }
+
+  function deleteLast() {
+    currentInput = currentInput.length > 1 ? currentInput.slice(0, -1) : '0';
+    updateDisplay();
+  }
+}
+
+init {
+  const grid = document.querySelector('.calc-grid');
+  if (grid) {
+    grid.addEventListener('click', (e) => {
+      const target = e.target;
+      if (!target.classList.contains('exw3-button')) return;
+      if (target.dataset.num !== undefined) appendNumber(target.dataset.num);
+      else if (target.dataset.op) setOperation(target.dataset.op);
+      else if (target.dataset.action === 'clear') clearCalc();
+      else if (target.dataset.action === 'delete') deleteLast();
+      else if (target.id === 'calc-equals') calculate();
+    });
+  }
+  updateDisplay();
+}

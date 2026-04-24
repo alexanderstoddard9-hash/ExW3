@@ -1,0 +1,79 @@
+@name "nav-router"
+@version "1.0.0"
+@description "Adds a navigation bar and shows one section at a time as pages"
+@modifies kernel
+@dependencies []
+
+css {
+  #exw3-nav {
+    background: #1e1e2e;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 20px;
+    flex-wrap: wrap;
+  }
+
+  #exw3-nav a.nav-link {
+    color: #aaa;
+    text-decoration: none;
+    padding: 14px 14px;
+    font-size: 0.9em;
+    border-bottom: 3px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    text-transform: capitalize;
+    white-space: nowrap;
+  }
+
+  #exw3-nav a.nav-link:hover {
+    color: white;
+  }
+
+  #exw3-nav a.nav-link.active {
+    color: white;
+    border-bottom-color: #667eea;
+  }
+
+  .exw3-section {
+    display: none;
+  }
+
+  .exw3-section.page-active {
+    display: block;
+  }
+}
+
+init {
+  const app = document.getElementById('app');
+  if (!app) return;
+
+  const sections = Array.from(app.querySelectorAll('.exw3-section'));
+  if (!sections.length) return;
+
+  const nav = document.getElementById('exw3-nav');
+  if (!nav) return;
+
+  sections.forEach(sec => {
+    const name = sec.id.replace('section-', '');
+    const a = document.createElement('a');
+    a.className = 'nav-link';
+    a.href = '#' + name;
+    a.textContent = name;
+    a.dataset.section = name;
+    nav.appendChild(a);
+  });
+
+  function navigate(hash) {
+    const target = (hash || '').replace('#', '') || sections[0].id.replace('section-', '');
+    sections.forEach(sec => sec.classList.remove('page-active'));
+    nav.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    const activeSec = document.getElementById('section-' + target) || sections[0];
+    activeSec.classList.add('page-active');
+    const activeLink = nav.querySelector('[data-section="' + activeSec.id.replace('section-', '') + '"]');
+    if (activeLink) activeLink.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  window.addEventListener('hashchange', () => navigate(window.location.hash));
+  navigate(window.location.hash);
+}

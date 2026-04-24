@@ -1,0 +1,23 @@
+{
+  "name": "EXW3 Local Site",
+  "version": "Ex 3 Core | V.2",
+  "description": "A modular local site with kernel and extensible mods",
+  "layers": [
+    "base-styling",
+    "dark-mode",
+    "header-bar",
+    "nav-router",
+    "permissions",
+    "login"
+  ],
+  "sections": [
+    "dashboard",
+    "content",
+    "notes",
+    "clock",
+    "links",
+    "about",
+    "settings",
+    "calc"
+  ]
+}

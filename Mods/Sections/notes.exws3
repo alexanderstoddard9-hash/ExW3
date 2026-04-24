@@ -1,0 +1,105 @@
+@name "notes"
+@version "1.0.0"
+@description "Quick notes and todo list"
+@dependencies []
+
+html {
+  <div class="exw3-container">
+    <h2>Notes</h2>
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+      <input type="text" class="exw3-input" id="note-input" placeholder="Add a note..." style="margin: 0; flex: 1;">
+      <button class="exw3-button" id="note-add">Add</button>
+    </div>
+    <ul id="notes-list" style="list-style: none; padding: 0; margin: 0;"></ul>
+    <p id="notes-empty" style="color: #999; font-style: italic;">No notes yet. Add one above!</p>
+  </div>
+}
+
+css {
+  .note-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  .note-item span {
+    flex: 1;
+  }
+  .note-item.done span {
+    text-decoration: line-through;
+    color: #aaa;
+  }
+  .note-delete {
+    background: none;
+    border: none;
+    color: #cc4444;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+  }
+  .note-check {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+javascript {
+  let notes = JSON.parse(localStorage.getItem('exw3-notes') || '[]');
+
+  function saveNotes() {
+    localStorage.setItem('exw3-notes', JSON.stringify(notes));
+  }
+
+  function renderNotes() {
+    const list = document.getElementById('notes-list');
+    const empty = document.getElementById('notes-empty');
+    if (!list) return;
+    list.innerHTML = '';
+    empty.style.display = notes.length ? 'none' : 'block';
+    notes.forEach((note, i) => {
+      const li = document.createElement('li');
+      li.className = 'note-item' + (note.done ? ' done' : '');
+      li.innerHTML = `
+        <input class="note-check" type="checkbox" ${note.done ? 'checked' : ''} data-i="${i}">
+        <span>${note.text}</span>
+        <button class="note-delete" data-i="${i}">✕</button>
+      `;
+      list.appendChild(li);
+    });
+    list.querySelectorAll('.note-check').forEach(cb => {
+      cb.addEventListener('change', e => {
+        notes[e.target.dataset.i].done = e.target.checked;
+        saveNotes(); renderNotes();
+      });
+    });
+    list.querySelectorAll('.note-delete').forEach(btn => {
+      btn.addEventListener('click', e => {
+        notes.splice(e.target.dataset.i, 1);
+        saveNotes(); renderNotes();
+      });
+    });
+  }
+}
+
+init {
+  const input = document.getElementById('note-input');
+  const addBtn = document.getElementById('note-add');
+  if (addBtn) {
+    addBtn.addEventListener('click', () => {
+      const text = input.value.trim();
+      if (!text) return;
+      notes.push({ text, done: false });
+      saveNotes(); renderNotes();
+      input.value = '';
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addBtn.click();
+    });
+  }
+  renderNotes();
+}

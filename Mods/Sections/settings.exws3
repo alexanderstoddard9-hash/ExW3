@@ -1,0 +1,96 @@
+@name "settings"
+@version "1.0.0"
+@description "Settings section for site configuration"
+@dependencies []
+
+html {
+  <div class="exw3-container">
+    <h2>Settings</h2>
+    
+    <div class="exw3-card" style="max-width: 480px; margin-bottom: 20px;">
+      <h3 style="margin-top: 0;">Account</h3>
+      <p style="margin: 8px 0;">Logged in as: <strong id="current-username"></strong></p>
+      <button class="exw3-button" id="logout-btn" style="background: #dc3545;">Log Out</button>
+    </div>
+
+    <div class="exw3-card" style="max-width: 480px;">
+      <h3 style="margin-top: 0;">Appearance</h3>
+      <label style="display:block; margin-bottom: 6px; font-weight: 600;">Site Name</label>
+      <input type="text" class="exw3-input" id="site-name" placeholder="Enter site name">
+
+      <label style="display:block; margin-bottom: 6px; font-weight: 600;">Theme</label>
+      <select class="exw3-input" id="theme-select">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+
+      <button class="exw3-button" id="save-settings">Save Settings</button>
+      <div id="settings-message" style="margin-top: 12px;"></div>
+    </div>
+  </div>
+}
+
+javascript {
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.body.classList.add('exw3-dark');
+    } else {
+      document.body.classList.remove('exw3-dark');
+    }
+  }
+
+  function loadSettings() {
+    const saved = JSON.parse(localStorage.getItem('exw3-settings') || '{}');
+    const nameEl = document.getElementById('site-name');
+    const themeEl = document.getElementById('theme-select');
+    if (nameEl) nameEl.value = saved.siteName || 'EXW3 Local Site';
+    if (themeEl) themeEl.value = saved.theme || 'light';
+    applyTheme(saved.theme || 'light');
+  }
+}
+
+init {
+  loadSettings();
+
+  // Display current username
+  const usernameEl = document.getElementById('current-username');
+  if (usernameEl && window.exw3CurrentUser) {
+    usernameEl.textContent = window.exw3CurrentUser() || 'Unknown';
+  }
+
+  // Logout button
+  const logoutBtn = document.getElementById('logout-btn');
+  console.log('Logout button found:', logoutBtn);
+  console.log('exw3Logout function exists:', typeof window.exw3Logout);
+  
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      console.log('Logout button clicked!');
+      if (window.exw3Logout) {
+        console.log('Calling exw3Logout...');
+        if (confirm('Are you sure you want to log out?')) {
+          window.exw3Logout();
+        }
+      } else {
+        console.error('exw3Logout function not found!');
+        alert('Logout function not available. Please refresh the page.');
+      }
+    });
+  } else {
+    console.error('Logout button not found!');
+  }
+
+  // Save settings button
+  const saveBtn = document.getElementById('save-settings');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      const name = document.getElementById('site-name').value.trim();
+      const theme = document.getElementById('theme-select').value;
+      localStorage.setItem('exw3-settings', JSON.stringify({ siteName: name, theme }));
+      applyTheme(theme);
+      const msg = document.getElementById('settings-message');
+      msg.innerHTML = '<div class="exw3-alert success">Settings saved!</div>';
+      setTimeout(() => { msg.innerHTML = ''; }, 2500);
+    });
+  }
+}
